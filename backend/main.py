@@ -9,8 +9,9 @@ import threading
 
 app = FastAPI()
 
-# Minha key só para o youtube list
-API_KEY = 'AIzaSyCc7Jl02Ijq_vKj2ZJOHRmWMN1TYs1OGI8'
+# Obtém a chave da API do YouTube a partir das variáveis de ambiente
+API_KEY = os.getenv('YOUTUBE_API_KEY')
+
 
 youtube = build(
     'youtube',
