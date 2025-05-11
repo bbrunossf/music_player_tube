@@ -20,3 +20,4 @@ Existem diversas bibliotecas para consumir dados do YouTube, que podem ficar def
 
 ## Exemplo
 O vídeo abaixo mostra o funcionamento da aplicação, com o frontend e as respostas do backend.  
+![Demonstração](./demo4.gif)
