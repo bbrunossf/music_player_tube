@@ -1,0 +1,7 @@
+fastapi>=0.68.0
+uvicorn>=0.15.0
+yt-dlp>=2023.7.6
+python-multipart
+requests
+pydantic>=1.8.2
+google-api-python-client

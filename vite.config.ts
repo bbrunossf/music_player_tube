@@ -21,4 +21,9 @@ export default defineConfig({
     }),
     tsconfigPaths(),
   ],
+  ssr: {
+    noExternal: [    
+        "@mui/material",        
+    ]
+    },
 });

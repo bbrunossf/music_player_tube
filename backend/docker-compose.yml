@@ -1,0 +1,18 @@
+
+services:
+  backend:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - /videos:/app/downloads  # Persistir downloads
+      - ./main.py:/app/main.py       # Montar main.py no container
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+    # Healthcheck opcional para monitoramento
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
