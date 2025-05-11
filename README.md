@@ -1,40 +1,22 @@
-# Welcome to Remix!
+# Aplicação para baixar vídeos e áudios do Youtube e salvar localmente
 
-- 📖 [Remix docs](https://remix.run/docs)
+## Resumo
+O código desse repositório tem por objetivo salvar arquivos de vídeo ou áudio do YouTube, salvando localmente, permitindo a sua reprodução sem acessar a plataforma.  
+Os arquivos são salvos em um dispositivo local, que é usado para armazenar a biblioteca do Jellyfin (gerenciador de arquivos de mídia), que automaticamente reconhece os novos arquivos e adiciona à playlist, podendo ser acessada por qualquer dispositivo da rede local.  
 
-## Development
 
-Run the dev server:
+## Ferramentas utilizadas
+O backend da aplicação foi feita em python, com funções para procurar o termo desejado em playlists existentes no YouTube, e depois fazer o download dos vídeos selecionados.  
+A bilbioteca principal utilizada foi a yt_dlp. O código foi encapsulado em um container Docker, para facilitar a execução.  
+O frontend foi feito com o framework Remix, podendo ser acessada por qualquer dispositivo na mesma rede local.  
 
-```shellscript
-npm run dev
-```
+## Execução
+O termo digitado é pesquisado somente em playlists, e retorna as 5 primeiras listas.  
+O usuário pode selecionar todos os arquivos de uma ou mais playlists, ou arquivos separados de listas diferentes.  
+Os arquivos selecionados são baixados em uma pasta no raspberry pi configurada como biblioteca para o Jellyfin, que reconhece o novo arquivo e adiciona à playlist.
 
-## Deployment
+## Nota  
+Existem diversas bibliotecas para consumir dados do YouTube, que podem ficar defasadas à medida que essa plataforma cria novas formas de impedir o download de certos conteúdos.
 
-First, build your app for production:
-
-```sh
-npm run build
-```
-
-Then run the app in production mode:
-
-```sh
-npm start
-```
-
-Now you'll need to pick a host to deploy it to.
-
-### DIY
-
-If you're familiar with deploying Node applications, the built-in Remix app server is production-ready.
-
-Make sure to deploy the output of `npm run build`
-
-- `build/server`
-- `build/client`
-
-## Styling
-
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever css framework you prefer. See the [Vite docs on css](https://vitejs.dev/guide/features.html#css) for more information.
+## Exemplo
+O vídeo abaixo mostra o funcionamento da aplicação, com o frontend e as respostas do backend.  
