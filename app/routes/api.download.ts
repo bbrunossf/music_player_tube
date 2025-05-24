@@ -1,11 +1,23 @@
 import type { ActionFunctionArgs } from '@remix-run/node'
 
+
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData()
   const video_ids = JSON.parse(formData.get('video_ids') as string)
 
   try {
-    const response = await fetch('http://192.168.1.14:5000/api/download', {
+    //const response = await fetch('http://192.168.1.14:5000/api/download', {
+    // ✅ process.env funciona perfeitamente aqui (servidor)
+    const apiUrl = process.env.API_URL_DOWNLOAD
+    
+    if (!apiUrl) {
+      console.error('API_URL_DOWNLOAD não definida no .env')
+      return json({ error: 'Configuração de API inválida' }, { status: 500 })
+    }
+
+    console.log(`Iniciando download de ${video_ids.length} vídeos na URL: ${apiUrl}`)
+
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ video_ids })

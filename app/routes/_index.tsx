@@ -1,3 +1,5 @@
+// Última atualização: lógica do botão "Carregar mais vídeos" 
+
 import { useState, useEffect } from 'react';
 import { useFetcher } from '@remix-run/react';
 import { useMusicStore } from '~/store/useMusicStore';
@@ -6,6 +8,8 @@ import { Card, CardContent } from '~/components/ui/card';
 import { Checkbox } from '~/components/ui/checkbox';
 import { Label } from '~/components/ui/label';
 import { Input } from '~/components/ui/input'; 
+
+
 
 export default function Index() {
     const {
@@ -19,6 +23,7 @@ export default function Index() {
     const searchFetcher = useFetcher();
     const [query, setQuery] = useState('');
     const [expandedPlaylistId, setExpandedPlaylistId] = useState(null);
+    const [videosToShowMap, setVideosToShowMap] = useState({});
 
     const handleSearch = () => {
         searchFetcher.submit(
@@ -32,7 +37,22 @@ export default function Index() {
             setExpandedPlaylistId(null); // Colapsa se já estiver expandida
         } else {
             setExpandedPlaylistId(playlistId); // Expande a playlist
+
+            // Initialize videos to show for this playlist if not already set
+            if (!videosToShowMap[playlistId]) {
+                setVideosToShowMap(prevMap => ({
+                    ...prevMap,
+                    [playlistId]: 10
+                }));
+            }
         }
+    };
+
+    const handleLoadMoreVideos = (playlistId) => {
+        setVideosToShowMap(prevMap => ({
+            ...prevMap,
+            [playlistId]: (prevMap[playlistId] || 0) + 10
+        }));
     };
 
     const handleDownload = () => {
@@ -110,7 +130,8 @@ export default function Index() {
                         {expandedPlaylistId === playlist.id && (
                             <div className="ml-4 mt-2">
                                 {playlist.videos.length > 0 ? (
-                                    playlist.videos.slice(0, 10).map((video) => ( 
+                                    //playlist.videos.slice(0, 10).map((video) => ( 
+                                    playlist.videos.slice(0, videosToShowMap[playlist.id] || 10).map((video) => ( 
                                         <div key={video.id} className="flex items-center mt-2">
                                             <Checkbox
                                                 id={`video-${video.id}`}
@@ -127,9 +148,12 @@ export default function Index() {
                                 ) : (
                                     <p>Sem vídeos disponíveis nessa playlist.</p>
                                 )}
-                                <Button className="mt-2" onClick={() => {/* Lógica para carregar mais videos */}}>
+                                {/* <Button className="mt-2" onClick={() =>  Lógica para carregar mais videos */}
+                                {videosToShowMap[playlist.id] < playlist.videos.length && (
+                                    <Button className="mt-2" onClick={() => handleLoadMoreVideos(playlist.id)}>
                                     Carregar mais vídeos
                                 </Button>
+                                )}
                             </div>
                         )}
                     </CardContent>

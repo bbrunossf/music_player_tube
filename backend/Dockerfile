@@ -18,6 +18,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copiar o resto da aplicação
 COPY main.py .
+COPY .env .env
 
 # Criar diretório para downloads
 RUN mkdir -p /app/downloads
