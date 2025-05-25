@@ -15,7 +15,7 @@ load_dotenv()
 # Obtém a chave da API do YouTube a partir das variáveis de ambiente
 API_KEY = os.getenv('YOUTUBE_API_KEY')
 print(f"API_KEY: {API_KEY}") # Para verificar se a chave está sendo lida corretamente
-#API_KEY = "AIzaSyCc7Jl02Ijq_vKj2ZJOHRmWMN1TYs1OGI8"
+
 
 
 

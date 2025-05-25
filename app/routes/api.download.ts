@@ -8,7 +8,7 @@ export async function action({ request }: ActionFunctionArgs) {
   try {
     //const response = await fetch('http://192.168.1.14:5000/api/download', {
     // ✅ process.env funciona perfeitamente aqui (servidor)
-    const apiUrl = process.env.API_URL_DOWNLOAD
+    const apiUrl = process.env.PUBLIC_API_URL_DOWNLOAD
     
     if (!apiUrl) {
       console.error('API_URL_DOWNLOAD não definida no .env')
