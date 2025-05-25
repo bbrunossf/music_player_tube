@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 
 export async function loader({ request }: LoaderFunctionArgs) {
     // ✅ Variáveis de ambiente funcionam no servidor
-    const apiUrl = process.env.API_URL_HEALTH || "http://localhost:5000/api/health";
+    const apiUrl = process.env.PUBLIC_API_URL_HEALTH;
     
     return json({
         apiUrl

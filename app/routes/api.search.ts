@@ -12,7 +12,7 @@ export async function action({ request }: ActionFunctionArgs) {
     const apiUrl = process.env.PUBLIC_API_URL_SEARCH
     
     if (!apiUrl) {
-      console.error('API_URL_SEARCH não definida no .env')
+      console.error('PUBLIC_API_URL_SEARCH não definida no .env')
       return json({ error: 'Configuração de API inválida' }, { status: 500 })
     }
 
