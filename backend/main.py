@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
@@ -8,6 +8,8 @@ from googleapiclient.discovery import build
 import yt_dlp as youtube_dl
 from typing import List
 import threading
+from urllib.parse import urlparse, parse_qs
+import re
 
 app = FastAPI()
 
@@ -16,6 +18,7 @@ load_dotenv()
 API_KEY = os.getenv('YOUTUBE_API_KEY')
 print(f"API_KEY: {API_KEY}") # Para verificar se a chave está sendo lida corretamente
 
+#uai, não posso passar o endereço como env também?
 
 
 
@@ -28,7 +31,7 @@ youtube = build(
 # Configurar CORS para permitir comunicação com frontend Remix
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3001"],  # Porta padrão do Remix para modo desenvolvimento (5173)
+    allow_origins=["http://localhost:3001", "*"],  # Porta padrão do Remix para modo desenvolvimento (5173)
     allow_methods=["POST"],
     allow_headers=["*"],
 )
@@ -50,8 +53,16 @@ class Playlist(BaseModel):
 class SearchResponse(BaseModel):
     playlists: List[Playlist]
 
+# class DownloadRequest(BaseModel):
+#     video_ids: List[str]
+
 class DownloadRequest(BaseModel):
     video_ids: List[str]
+    format: Optional[str] = "video"  # padrão
+
+
+class ImportRequest(BaseModel):
+    url: str
 
 #def search_playlists(query, next_page_token=None):
 def search_playlists(query):
@@ -65,6 +76,9 @@ def search_playlists(query):
     print("executando a busca por playlists...")
     response = request.execute()
     #print(response.keys()) #retorna o 'items'
+    
+    #retorna a url da playlist, o título e o ID
+    #print(f"response: {response}") #para verificar o que está sendo retornado
     return response
 
 # def get_videos_info(video_id):
@@ -156,6 +170,7 @@ async def search_tracks(request: SearchRequest):
             continue
 
         playlist_id = item['id']['playlistId']
+        #print(f"playlist_id: {playlist_id}") #para verificar se o ID da playlist está correto
         playlist_title = item['snippet']['title']
         
         # Obter vídeos relacionados à playlist
@@ -166,6 +181,37 @@ async def search_tracks(request: SearchRequest):
     #return {"playlists": playlists}
     return SearchResponse(playlists=playlists)    
     
+
+
+
+
+@app.post("/api/import-playlist")
+async def import_playlist(url: str = Form(...)):
+    parsed_url = urlparse(url)
+    query_params = parse_qs(parsed_url.query)
+
+    playlist_ids = query_params.get("list")
+    if not playlist_ids:
+        raise HTTPException(
+            status_code=400,
+            detail="URL inválida. Parâmetro 'list' não encontrado."
+        )
+
+    playlist_id = playlist_ids[0]  # Primeiro valor do parâmetro 'list'
+    print(f"playlist_id: {playlist_id}")  # Para verificar se o ID da playlist está correto
+
+    videos = get_videos_info(playlist_id)
+    if not videos:
+        raise HTTPException(
+            status_code=404,
+            detail="Não foi possível obter vídeos dessa playlist."
+        )
+
+    playlist_title = f"Playlist importada ({playlist_id})"
+
+    return SearchResponse(playlists=[
+        Playlist(id=playlist_id, title=playlist_title, videos=videos)
+    ])
 
 def download_video(video_id: str):
     ydl_opts = {
@@ -206,7 +252,10 @@ async def start_download(request: DownloadRequest):
         def process_downloads():
             for video_id in request.video_ids:
                 try:
-                    download_video(video_id) #aqui pode usar o download_audio se quiser baixar o audio
+                    if request.format == "audio":
+                        download_audio(video_id)
+                    else:
+                        download_video(video_id)
                 except HTTPException as e:
                     error_messages.append(str(e.detail))
         

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "@remix-run/react";
+import { Links, Meta, Outlet, Scripts, ScrollRestoration, MetaFunction } from "@remix-run/react";
 import type { LinksFunction } from "@remix-run/node";
 //import tailwindUrl from "~/tailwind.css";
 import "./tailwind.css";
@@ -10,6 +10,13 @@ import "./tailwind.css";
 //     { name: "description", content: "Welcome to Remix!" },
 //   ];
 // };
+export const meta: MetaFunction = () => {
+  return [
+    { title: "YouTube Playlist Downloader" },
+    { name: "description", content: "Ferramenta para baixar vídeos e áudios de playlists do YouTube" },
+  ];
+};
+
 
 // Removed MUI and Emotion integration; using Tailwind via link.
 
@@ -32,8 +39,7 @@ export const links: LinksFunction = () => [
 export default function App() {
   return (
     <html lang="pt-BR" className="bg-gray-900 text-black">
-      <head>
-        <title>Buscador de musicas do Brunao</title>
+      <head>        
         <Meta />
         <Links />
       </head>
