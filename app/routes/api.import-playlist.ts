@@ -1,3 +1,9 @@
+// Nota: não adiantou colocar as variáveis no arquivo .env; no modo de produção o Remix não lê o .env
+// É necessário definir as variáveis de ambiente diretamente no servidor ou no serviço de hospedagem.
+// A solução foi declarar as variáveis dentro do arquivo do daemon, (frontend.service, no meu caso)
+// com a chave Environment=PUBLIC_API_URL_IMPORT_PLAYLIST=http://192.168.1.14:5000/api/import-playlist
+//Seguir esse procedimento para outros projetos em Remix que precisem de variáveis de ambiente.
+
 import { json, type ActionFunctionArgs } from '@remix-run/node';
 
 export async function action({ request }: ActionFunctionArgs) {

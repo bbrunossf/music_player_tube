@@ -31,7 +31,7 @@ youtube = build(
 # Configurar CORS para permitir comunicação com frontend Remix
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3001", "*"],  # Porta padrão do Remix para modo desenvolvimento (5173)
+    allow_origins=["http://localhost:3001", "192.168.1.6:3001", "192.168.1.8:3001"],  # Porta padrão do Remix para modo desenvolvimento (5173)
     allow_methods=["POST"],
     allow_headers=["*"],
 )
