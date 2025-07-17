@@ -216,7 +216,7 @@ async def import_playlist(url: str = Form(...)):
 def download_video(video_id: str):
     ydl_opts = {
         'format': 'best',  # Define que quer baixar o melhor formato de vídeo #VOU DEIXAR O DEFAULT MESMO
-        'outtmpl': 'downloads/%(title)s.%(ext)s',  # Define o template do nome do arquivo
+        'outtmpl': 'downloads/videos/%(title)s.%(ext)s',  # Define o template do nome do arquivo
         'postprocessors': [],  # Nenhum postprocessador, pois queremos salvar o vídeo completo
     }
 
@@ -229,7 +229,7 @@ def download_video(video_id: str):
 def download_audio(video_id: str):
     ydl_opts = {
         'format': 'bestaudio/best',
-        'outtmpl': 'downloads/%(title)s.%(ext)s',
+        'outtmpl': 'downloads/musicas/%(title)s.%(ext)s',
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
