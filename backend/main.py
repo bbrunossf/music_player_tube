@@ -19,7 +19,7 @@ API_KEY = os.getenv('YOUTUBE_API_KEY')
 print(f"API_KEY: {API_KEY}") # Para verificar se a chave está sendo lida corretamente
 
 #uai, não posso passar o endereço como env também?
-
+frontend_origin = os.getenv("FRONTEND_ORIGIN", "http://localhost:3001")
 
 
 youtube = build(
@@ -31,7 +31,7 @@ youtube = build(
 # Configurar CORS para permitir comunicação com frontend Remix
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3001", "192.168.1.6:3001", "192.168.1.8:3001"],  # Porta padrão do Remix para modo desenvolvimento (5173)
+    allow_origins=[frontend_origin],  # Porta padrão do Remix para modo desenvolvimento (5173)
     allow_methods=["POST"],
     allow_headers=["*"],
 )

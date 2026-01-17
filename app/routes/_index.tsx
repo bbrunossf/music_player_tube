@@ -1,5 +1,6 @@
 // Última atualização: lógica do botão "Carregar mais vídeos" 
 
+import Layout from '~/components/layout';
 import { useState, useEffect } from 'react';
 import { useFetcher } from '@remix-run/react';
 import { useMusicStore } from '~/store/useMusicStore';
@@ -215,8 +216,11 @@ useEffect(() => {
 
 
     return (
-        //<div className="p-5">
-        <div className="min-h-screen bg-zinc-100 text-zinc-950 px-4 sm:px-6 lg:px-8">
+        <Layout>
+        <div className="page home-page">
+        {/* <div className="min-h-screen flex"> */}
+        {/* <div className="min-h-screen bg-zinc-100 text-zinc-950 px-4 sm:px-6 lg:px-8"> */}
+        <div className="flex-1 bg-zinc-100 text-zinc-950 px-4 sm:px-6 lg:px-8">
 
             {/* <h1 className="text-2xl mb-4">Playlists do YouTube</h1> */}
             <h1 className="text-3xl font-semibold text-center mb-6 tracking-tight">
@@ -317,7 +321,7 @@ useEffect(() => {
             ))}
             <div className="flex justify-center mt-8">
                 <Button size="lg" onClick={handleDownload}>
-                    Baixar Vídeos Selecionados
+                    Baixar Videos Selecionados
                 </Button>
             </div>
 
@@ -367,14 +371,23 @@ useEffect(() => {
                 className={`w-3 h-3 rounded-full ${
                     apiStatus === "ok" ? "bg-green-500" : "bg-red-500"
                 }`}
-                title={apiStatus === "ok" ? "Conectado ao backend" : "Erro de conexão"}
+                title={apiStatus === "ok" ? "Conectado ao backend" : "Erro de conexao"}
             ></div>
             <span>
-                Conexão com o backend (a cada 30s):{" "}
+                Conexao com o backend (a cada 30s):{" "}
                 {apiStatus === "checking" ? "verificando..." : apiStatus === "ok" ? "ativa" : "falha"}
             </span>
         </footer>
 
         </div>
+
+        
+        <div className="flex-1 bg-zinc-200 text-zinc-950 px-4 sm:px-6 lg:px-8">
+            Conteudo da direita
+        </div>
+
+        </div>
+        </Layout>
     );
+    
 }

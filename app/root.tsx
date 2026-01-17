@@ -3,6 +3,7 @@ import { Links, Meta, Outlet, Scripts, ScrollRestoration, MetaFunction } from "@
 import type { LinksFunction } from "@remix-run/node";
 //import tailwindUrl from "~/tailwind.css";
 import "./tailwind.css";
+import "./index.css";
 
 // export const meta: MetaFunction = () => {
 //   return [
@@ -13,7 +14,7 @@ import "./tailwind.css";
 export const meta: MetaFunction = () => {
   return [
     { title: "YouTube Playlist Downloader" },
-    { name: "description", content: "Ferramenta para baixar vídeos e áudios de playlists do YouTube" },
+    { name: "description", content: "Ferramenta para baixar videos e audios de playlists do YouTube" },
   ];
 };
 
@@ -39,7 +40,8 @@ export const links: LinksFunction = () => [
 export default function App() {
   return (
     <html lang="pt-BR" className="bg-gray-900 text-black">
-      <head>        
+      <head>
+        <meta charSet="utf-8" />        
         <Meta />
         <Links />
       </head>
