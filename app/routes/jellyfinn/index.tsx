@@ -2,7 +2,7 @@ import Layout from '~/components/layout';
 import { json, LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { AlertCircle, RefreshCw, Clapperboard } from "lucide-react";
 import { useJellyfin } from "~/hooks/useJellyfin";
 import { ConfigPanel } from "~/components/ConfigPanel";
@@ -48,6 +48,27 @@ export default function Index() {
   const [selectedItems, setSelectedItems] = useState<JellyfinItem[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const selectedIds = new Set(selectedItems.map((item) => item.Id));
+  const [textFilter, setTextFilter] = useState<string>(""); // filtro de texto para o nome do item
+
+
+  // Adicione este useMemo para obter itens filtrados pela biblioteca e pelo texto
+  const filteredItems = useMemo(() => {
+    const byLibrary = items.filter((i) => {
+      const libId = (i as any).LibraryId ?? null;
+      //return selectedLibrary ? libId === selectedLibrary : true;
+      if (selectedLibrary == null) return true; // todas as bibliotecas
+      // Se o item não tem LibraryId, não o exclua automaticamente ao filtrar por biblioteca
+      if (libId == null) return true;
+      return libId === selectedLibrary;      
+    });
+
+    const byText = byLibrary.filter((i) => {
+      if (!textFilter) return true;
+      const name = (i as any).Name ?? "";
+      return name.toLowerCase().includes(textFilter.toLowerCase());
+    });
+    return byText;
+  }, [items, selectedLibrary, textFilter]);
 
   const handleConnect = useCallback(() => {
     fetchLibraries();
@@ -93,9 +114,11 @@ export default function Index() {
 
   return (
     <Layout>
-    <div className="min-h-screen bg-background flex">
+    {/* <div className="min-h-screen bg-background flex"> */}
+    <div className="p-6 grid grid-cols-[1fr,auto] gap-6 h-screen overflow-hidden">
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      {/* <div className="flex-1 flex flex-col"> */}
+      <div className="space-y-6 overflow-y-auto h-full">
         {/* Header */}
         <header className="border-b border-border p-4 lg:p-6">
           <div className="max-w-7xl mx-auto">
@@ -134,6 +157,9 @@ export default function Index() {
               </Alert>
             )}
 
+            
+            
+
             {/* Not Configured State */}
             {!isConfigured && (
               <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
@@ -162,6 +188,17 @@ export default function Index() {
                         selectedLibrary={selectedLibrary}
                         onSelect={handleLibrarySelect}
                       />
+                      {/* filtro de texto para itens da playlist */}            
+                      <div className="flex items-center space-x-2">
+                        <label className="block text-sm font-medium">Filtro</label>
+                        <input
+                          type="text"                  
+                          placeholder="Filtrar itens..."
+                          value={textFilter}
+                          onChange={(e) => setTextFilter(e.target.value)}
+                          className="bg-background text-foreground border p-2 rounded w-full"
+                        />
+                      </div>
                       <div className="flex items-center gap-3">
                         <ViewToggle
                           viewMode={viewMode}
@@ -203,7 +240,7 @@ export default function Index() {
                 {/* Media Grid/List */}
                 {viewMode === "grid" ? (
                   <MediaGrid
-                    items={items}
+                    items={filteredItems}
                     selectedIds={selectedIds}
                     onToggleItem={handleToggleItem}
                     getImageUrl={getImageUrl}
@@ -219,7 +256,7 @@ export default function Index() {
                   />
                 ) : (
                   <MediaList
-                    items={items}
+                    items={filteredItems}
                     selectedIds={selectedIds}
                     onToggleItem={handleToggleItem}
                     getImageUrl={getImageUrl}
@@ -231,16 +268,18 @@ export default function Index() {
         </main>
       </div>
 
-      {/* Playlist Sidebar */}
-      {isConfigured && (
-        <PlaylistPanel
-          selectedItems={selectedItems}
-          onRemoveItem={handleRemoveItem}
-          onClearAll={handleClearAll}
-          onCreatePlaylist={handleCreatePlaylist}
-          getImageUrl={getImageUrl}
-        />
-      )}
+      <div className="flex flex-col gap-4 overflow-y-auto h-full">
+        {/* Playlist Sidebar */}
+        {isConfigured && (
+          <PlaylistPanel
+            selectedItems={selectedItems}
+            onRemoveItem={handleRemoveItem}
+            onClearAll={handleClearAll}
+            onCreatePlaylist={handleCreatePlaylist}
+            getImageUrl={getImageUrl}
+          />
+        )}
+      </div>
     </div>
   </Layout>
   );

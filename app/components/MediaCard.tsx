@@ -117,7 +117,7 @@ export function MediaCard({ item, imageUrl, isSelected, onToggle }: MediaCardPro
 
       {/* Title */}
       <div className="p-3 bg-card">
-        <h3 className="font-medium text-sm text-foreground truncate sm:whitespace-normal sm:overflow-visible title={item.Name}">
+        <h3 className="font-medium text-sm text-foreground truncate  title={item.Name}">
           {item.Name}
         </h3>
         {item.SeriesName && (
