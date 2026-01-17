@@ -1,7 +1,8 @@
 // app/routes/playlists.tsx
 import { LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
-import { getAuthenticatedApi, getCurrentUserId } from "~/lib/jellyfinClient";
+//import { getAuthenticatedApi, getCurrentUserId } from "~/lib/jellyfinClient";
+import { getAuthenticatedApi, getCurrentUserId } from "~/services/jellyfin.server";
 import { getLibraryApi, getItemsApi } from '@jellyfin/sdk/lib/utils/api/index.js';
 import { useState } from "react";
 

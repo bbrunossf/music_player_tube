@@ -235,3 +235,26 @@ kTranscoding":true
 "MediaType":"Unknown"}]
 "TotalRecordCount":3
 "StartIndex":0}
+
+
+conteúdo do serviço:
+/etc/systemd/system/frontend.service
+sudo systemctl daemon-reload depois
+[Unit]
+Description=Frontend Application
+After=network.target
+
+[Service]
+WorkingDirectory=/home/bruno/music_player
+Environment=PUBLIC_API_URL_SEARCH=http://192.168.1.14:5000/api/search
+Environment=PUBLIC_API_URL_DOWNLOAD=http://192.168.1.14:5000/api/download
+Environment=PUBLIC_API_URL_HEALTH=http://192.168.1.14:5000/api/health
+Environment=PUBLIC_API_URL_IMPORT_PLAYLIST=http://192.168.1.14:5000/api/import-playlist
+EnvironmentFile=/home/bruno/music_player/.env
+ExecStart=/bin/bash -c 'npm run start'
+Restart=always
+User=bruno
+Environment=PATH=/usr/bin:/usr/local/bin
+
+[Install]
+WantedBy=multi-user.target
