@@ -21,7 +21,7 @@ export function useDownloadProgress(jobId: string | null) {
 
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`/api/download.status?job_id=${jobId}`)
+        const res = await fetch(`/api/download-status?job_id=${jobId}`)
         console.log("Resposta bruta:", res)
         const json = await res.json()
         console.log("JSON recebido:", json)

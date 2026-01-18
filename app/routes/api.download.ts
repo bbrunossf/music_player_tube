@@ -1,6 +1,27 @@
 import type { ActionFunctionArgs } from '@remix-run/node';
+import type { LoaderFunctionArgs } from "@remix-run/node";
 import { json } from '@remix-run/node'
 
+export async function loader({ request }: LoaderFunctionArgs) {
+  const url = new URL(request.url);
+  const jobId = url.searchParams.get("job_id");
+
+  if (!jobId) {
+    return json({ error: "job_id não informado" }, { status: 400 });
+  }
+
+  const apiUrl = process.env.PUBLIC_API_URL_STATUS;
+  // exemplo: http://192.168.1.14:5000/api/download-status
+
+  const response = await fetch(`${apiUrl}/${jobId}`);
+
+  if (!response.ok) {
+    return json({ error: "Job não encontrado" }, { status: 404 });
+  }
+
+  const data = await response.json();
+  return json(data);
+}
 
 export async function action({ request }: ActionFunctionArgs) {
   // const formData = await request.formData()
