@@ -38,7 +38,8 @@ export default function Index() {
     } = useMusicStore();
 
     const searchFetcher = useFetcher();
-    const [query, setQuery] = useState('');
+    const [searchurl, setsearchUrl] = useState('');
+    // const [query, setQuery] = useState('');
     const [expandedPlaylistId, setExpandedPlaylistId] = useState(null);
     const [videosToShowMap, setVideosToShowMap] = useState({});
     const [url, setUrl] = useState('');
@@ -60,7 +61,7 @@ export default function Index() {
 
     const handleSearch = () => {
         searchFetcher.submit(
-            { query },
+            { query: searchurl },
             { method: 'post', action: '/api/search' }
         );
     };
@@ -88,39 +89,7 @@ export default function Index() {
         }));
     };
 
-    // const handleDownload = () => {
-    //     //const selectedVideoIds = Object.keys(selected).filter(videoId => selected[videoId]);
-    //     const selectedVideoIds = Object.keys(selected).filter(id => {
-    //         // Verifica se o ID é um vídeo
-    //         return selected[id] && !tracks.some(playlist => playlist.id === id); 
-    //     });
-        
-    //     if (selectedVideoIds.length === 0) {
-    //         alert('Nenhum vídeo selecionado para download.');
-    //         return; // Se nenhum vídeo estiver selecionado, avise o usuário
-    //     }
-
-    //     fetch('http://192.168.1.14:5000/api/download', {
-    //         method: 'POST',
-    //         headers: { 'Content-Type': 'application/json' },
-    //         body: JSON.stringify({ video_ids: selectedVideoIds })
-    //     })
-    //     .then(response => {
-    //         if (!response.ok) {
-    //             throw new Error('Erro ao iniciar o download');
-    //         }
-    //         return response.json();
-    //     })
-    //     .then(data => {
-    //         console.log(data.status); // Você pode exibir uma mensagem a partir disso
-    //         alert(data.status); // Feedback para o usuário
-    //     })
-    //     .catch(error => {
-    //         console.error('Houve um erro: ', error);
-    //         alert('Houve um erro ao iniciar o download.');
-    //     });
-    // };
-
+    
     const handleDownload = () => {
     const selectedVideoIds = Object.keys(selected).filter(id => {
         return selected[id] && !tracks.some(playlist => playlist.id === id); 
@@ -181,17 +150,36 @@ const iniciarDownload = (formato: "video" | "audio") => {
     };
 
     const handleImportUrl = () => {
-        console.log('Importando URL:', url);
-        if (!url.trim()) {
+        console.log('Importando URL:', searchurl);
+        if (!searchurl.trim()) {
             alert("Informe uma URL de playlist válida.");
             return;
         }
 
         searchFetcher.submit(
-            { url },
+            { url: searchurl },
             { method: 'post', action: '/api/import-playlist' }
         );
     };
+
+    const handleUnifiedInput = () => {
+        const input = searchurl.trim();
+        
+        // Verifica se a entrada parece ser uma URL
+        if (input.startsWith('http://') || input.startsWith('https://') || input.startsWith('www.')) {
+            // É uma URL, executa a importação
+            handleImportUrl();
+        } else if (input) {
+            // É um termo de pesquisa, chama o fetcher diretamente
+            searchFetcher.submit(
+                { query: input },
+                { method: 'post', action: '/api/search' }
+            );
+        } else {
+            // Campo vazio
+            alert('Por favor, insira uma URL ou termo de pesquisa');
+        }
+        };
 
 
 
@@ -230,188 +218,220 @@ useEffect(() => {
 
 
     return (
-        <Layout>
-        <div className="page home-page min-h-screen">
-        <div className="w-full max-w-md mx-auto bg-zinc-100 text-zinc-950 px-3 py-4">
+//   <Layout>
+    <div className="page home-page min-h-screen bg-zinc-900 text-white">
+      {/* <div className="w-full max-w-md mx-auto px-3 py-6"> */}
+       <div className="w-full max-w-xl mx-auto px-3 py-6 sm:px-4 md:max-w-2xl lg:max-w-3xl">
+        <h1 className="text-2xl font-bold text-center mb-6 tracking-tight">
+          Video Downloader
+        </h1>
 
-            <h1 className="text-xl font-semibold text-center mb-4 tracking-tight">
-                YouTube Playlist Downloader
-            </h1>
-
-            <div className="flex gap-1.5 mb-2">
-                <Input
-                    placeholder="URL da playlist"
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                    className="text-sm h-9"
-                />
-                <Button onClick={handleImportUrl} size="sm" className="shrink-0 px-3">
-                    OK
-                </Button>
-            </div>
-
-            <div className="flex gap-1.5 mb-4">
-                <Input
-                    placeholder="Nome da playlist"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    className="text-sm h-9"
-                />
-                <Button onClick={handleSearch} size="sm" className="shrink-0 px-3">
-                    Pesquisar
-                </Button>
-            </div>
-
-            <div className="space-y-2">
-            {tracks.map((playlist) => (
-                <Card key={playlist.id} className="overflow-hidden">
-                    <CardContent className="p-3">
-                        <div className="flex items-center gap-2">
-                            <Checkbox
-                                id={`playlist-${playlist.id}`}
-                                checked={!!selected[playlist.id]}
-                                onCheckedChange={() => togglePlaylist(playlist.id)} 
-                                className="shrink-0"
-                            />
-                            <Label 
-                                htmlFor={`playlist-${playlist.id}`} 
-                                className="cursor-pointer text-sm font-medium leading-tight line-clamp-2" 
-                                onClick={() => handleTogglePlaylist(playlist.id)}
-                            >
-                                {playlist.title}
-                            </Label>
-                        </div>
-
-                        {expandedPlaylistId === playlist.id && (
-                            <div className="mt-3 pt-3 border-t">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="w-full mb-3 text-xs h-8"
-                                    onClick={() => selecionarTodosDaPlaylist(playlist.id)}
-                                >
-                                    Selecionar todos os visíveis
-                                </Button>
-
-                                {playlist.videos.length > 0 ? (
-                                    <div className="space-y-2">
-                                        {playlist.videos.slice(0, videosToShowMap[playlist.id] || 10).map((video) => (
-                                            <div key={video.id} className="flex gap-2 p-2 bg-white rounded-lg border">
-                                                <Checkbox
-                                                    id={`video-${video.id}`}
-                                                    checked={!!selected[video.id]}
-                                                    onCheckedChange={() => toggleTrack(video.id)}
-                                                    disabled={!selected[playlist.id]} 
-                                                    className="shrink-0 mt-1"
-                                                />
-                                                <img
-                                                    src={video.thumbnail}
-                                                    alt={video.title}
-                                                    className="w-20 h-14 object-cover rounded shrink-0"
-                                                />
-                                                <Label 
-                                                    htmlFor={`video-${video.id}`} 
-                                                    className="text-xs leading-tight line-clamp-3 flex-1"
-                                                >
-                                                    {video.title}
-                                                </Label>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className="text-xs text-gray-500">Sem vídeos disponíveis.</p>
-                                )}
-                                
-                                {videosToShowMap[playlist.id] < playlist.videos.length && (
-                                    <Button 
-                                        className="w-full mt-3 text-xs h-8" 
-                                        variant="secondary"
-                                        onClick={() => handleLoadMoreVideos(playlist.id)}
-                                    >
-                                        Carregar mais vídeos
-                                    </Button>
-                                )}
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-            ))}
-            </div>
-
-            <div className="sticky bottom-0 bg-zinc-100 pt-3 pb-2 -mx-3 px-3 border-t mt-4">
-                <Button className="w-full h-11 text-sm font-medium" onClick={handleDownload}>
-                    Baixar Videos Selecionados
-                </Button>
-            </div>
-
-            {showDownloadModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50 p-3">
-                    <div className="bg-white rounded-xl p-4 shadow-lg w-full max-w-md">
-                        <h2 className="text-base font-semibold mb-4 text-center">Escolha o formato</h2>
-
-                        <div className="grid grid-cols-2 gap-2 mb-4">
-                            <Button
-                                variant={downloadFormat === "video" ? "default" : "outline"}
-                                onClick={() => setDownloadFormat("video")}
-                                className="h-12"
-                            >
-                                Vídeo
-                            </Button>
-                            <Button
-                                variant={downloadFormat === "audio" ? "default" : "outline"}
-                                onClick={() => setDownloadFormat("audio")}
-                                className="h-12"
-                            >
-                                Áudio
-                            </Button>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2">
-                            <Button variant="ghost" onClick={() => setShowDownloadModal(false)} className="h-10">
-                                Cancelar
-                            </Button>
-                            <Button
-                                className="h-10"
-                                onClick={() => {
-                                    if (!downloadFormat) {
-                                        alert("Selecione uma opção.");
-                                        return;
-                                    }
-                                    iniciarDownload(downloadFormat);
-                                }}
-                            >
-                                OK
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {jobId && (
-                <div className="mt-4 p-3 bg-white rounded-lg border text-xs space-y-1">
-                    <p><span className="font-medium">Status:</span> {status}</p>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-blue-500 h-2 rounded-full transition-all" style={{ width: `${progress}%` }}></div>
-                    </div>
-                    <p><span className="font-medium">Vídeos:</span> {processed}/{total}</p>
-                    <p className="text-gray-500 truncate">{current}</p>
-                </div>
-            )}    
-        
-            <footer className="mt-6 pt-3 border-t flex items-center justify-center gap-2 text-xs text-gray-500">
-                <div
-                    className={`w-2 h-2 rounded-full shrink-0 ${
-                        apiStatus === "ok" ? "bg-green-500" : apiStatus === "checking" ? "bg-yellow-500" : "bg-red-500"
-                    }`}
-                />
-                <span>
-                    Backend: {apiStatus === "checking" ? "verificando..." : apiStatus === "ok" ? "conectado" : "falha"}
-                </span>
-            </footer>
-
+        {/* Barra de pesquisa principal */}
+        <div className="flex gap-2 mb-4 bg-zinc-800 p-2 rounded-lg">
+          <Input
+            placeholder="Digite um termo para pesquisar ou cole uma URL de playlist"
+            value={searchurl}
+            onChange={(e) => setsearchUrl(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleUnifiedInput()}
+            className="text-sm h-10 bg-zinc-800 border-none focus:ring-1 focus:ring-blue-500"
+          />
+          <Button 
+            onClick={handleUnifiedInput} 
+            size="sm" 
+            className="shrink-0 px-4 bg-blue-600 hover:bg-blue-700"
+          >
+            <span className="material-icons text-lg">search</span>
+          </Button>
         </div>
+
+        {jobId && (
+            <div className="mt-4 p-3 bg-white rounded-lg border text-xs space-y-1">
+                <p><span className="font-medium">Status:</span> {status}</p>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="bg-blue-500 h-2 rounded-full transition-all" style={{ width: `${progress}%` }}></div>
+                </div>
+                <p><span className="font-medium">Vídeos:</span> {processed}/{total}</p>
+                <p className="text-gray-500 truncate">{current}</p>
+            </div>
+        )}    
+
+        {/* Filtros */}
+        <div className="flex gap-2 mb-6 overflow-x-auto py-2">
+          <Button variant="ghost" className="rounded-full px-4 text-sm bg-zinc-800">All</Button>
+          <Button variant="ghost" className="rounded-full px-4 text-sm flex items-center gap-1">
+            <span className="material-icons text-sm">videocam</span>Video
+          </Button>
+          <Button variant="ghost" className="rounded-full px-4 text-sm flex items-center gap-1">
+            <span className="material-icons text-sm">audiotrack</span>Audio
+          </Button>
+          <Button variant="ghost" className="rounded-full px-4 text-sm flex items-center gap-1">
+            <span className="material-icons text-sm">playlist_play</span>Playlist
+          </Button>
         </div>
-        </Layout>
-    );
+
+        {/* Lista de vídeos */}
+        <div className="space-y-4">
+          {tracks.map((playlist) => (
+            <Card key={playlist.id} className="overflow-hidden bg-zinc-800 border-none shadow-md">
+              <CardContent className="p-0">
+                <div 
+                  className="p-3 cursor-pointer hover:bg-zinc-700 transition-colors"
+                  onClick={() => handleTogglePlaylist(playlist.id)}
+                >
+                  <div className="flex items-center gap-3">
+                    <Checkbox
+                      id={`playlist-${playlist.id}`}
+                      checked={!!selected[playlist.id]}
+                      onCheckedChange={() => togglePlaylist(playlist.id)}
+                      className="shrink-0 border-zinc-600"
+                    />
+                    <Label
+                      htmlFor={`playlist-${playlist.id}`}
+                      className="cursor-pointer text-sm font-medium leading-tight line-clamp-2"
+                    >
+                      {playlist.title}
+                    </Label>
+                  </div>
+                </div>
+
+                {expandedPlaylistId === playlist.id && (
+                  <div className="border-t border-zinc-700">
+                    {playlist.videos.slice(0, videosToShowMap[playlist.id] || 10).map((video) => (
+                      <div key={video.id} className="flex gap-3 p-3 hover:bg-zinc-700 border-b border-zinc-700 transition-colors">
+                        <Checkbox
+                          id={`video-${video.id}`}
+                          checked={!!selected[video.id]}
+                          onCheckedChange={() => toggleTrack(video.id)}
+                          disabled={!selected[playlist.id]}
+                          className="shrink-0 mt-1 border-zinc-600"
+                        />
+                        <div className="relative shrink-0">
+                          <img
+                            src={video.thumbnail}
+                            alt={video.title}
+                            className="w-24 h-16 object-cover rounded"
+                          />
+                          <div className="absolute bottom-1 right-1 bg-black/70 text-xs px-1 rounded">
+                            12:45
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <Label
+                            htmlFor={`video-${video.id}`}
+                            className="text-xs leading-tight line-clamp-2 font-medium mb-1"
+                          >
+                            {video.title}
+                          </Label>
+                          <p className="text-xs text-zinc-400">
+                            Channel Name • 1.2M views • 2 days ago
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+
+                    {videosToShowMap[playlist.id] < playlist.videos.length && (
+                      <Button
+                        className="w-full py-2 text-xs font-medium bg-transparent hover:bg-zinc-700 text-blue-400"
+                        variant="ghost"
+                        onClick={() => handleLoadMoreVideos(playlist.id)}
+                      >
+                        Load more videos
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Barra de navegação inferior */}
+        <div className="fixed bottom-0 left-0 right-0 bg-zinc-800 border-t border-zinc-700 py-2 px-4">
+          <div className="max-w-md mx-auto">
+            <Button 
+              className="w-full h-12 text-sm font-medium bg-blue-600 hover:bg-blue-700 flex items-center justify-center gap-2" 
+              onClick={handleDownload}
+            >
+              <span className="material-icons">download</span>
+              Download Selected ({Object.keys(selected).filter(id => selected[id] && !tracks.some(playlist => playlist.id === id)).length})
+            </Button>
+            
+            <div className="flex justify-between mt-4 text-zinc-400">
+              <Button variant="ghost" className="flex flex-col items-center text-xs">
+                <span className="material-icons">search</span>
+                Search
+              </Button>
+              <Button variant="ghost" className="flex flex-col items-center text-xs">
+                <span className="material-icons">download_for_offline</span>
+                Library
+              </Button>
+              <Button variant="ghost" className="flex flex-col items-center text-xs">
+                <span className="material-icons">settings</span>
+                Config
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Modal de seleção de formato */}
+      {showDownloadModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-zinc-800 rounded-xl p-5 shadow-lg w-full max-w-sm border border-zinc-700">
+            <h2 className="text-lg font-semibold mb-4 text-center">Choose Format</h2>
+
+            <div className="grid grid-cols-2 gap-3 mb-5">
+              <Button
+                variant={downloadFormat === "video" ? "default" : "outline"}
+                onClick={() => setDownloadFormat("video")}
+                className={`h-14 ${downloadFormat === "video" ? "bg-blue-600 hover:bg-blue-700" : "bg-zinc-700 border-zinc-600"}`}
+              >
+                <span className="material-icons mr-2">videocam</span>
+                Video
+              </Button>
+              <Button
+                variant={downloadFormat === "audio" ? "default" : "outline"}
+                onClick={() => setDownloadFormat("audio")}
+                className={`h-14 ${downloadFormat === "audio" ? "bg-blue-600 hover:bg-blue-700" : "bg-zinc-700 border-zinc-600"}`}
+              >
+                <span className="material-icons mr-2">audiotrack</span>
+                Audio
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Button 
+                variant="ghost" 
+                onClick={() => setShowDownloadModal(false)}
+                className="h-12 border border-zinc-700 hover:bg-zinc-700"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => downloadFormat && iniciarDownload(downloadFormat)}
+                disabled={!downloadFormat}
+                className="h-12 bg-blue-600 hover:bg-blue-700"
+              >
+                Download
+              </Button>
+            </div>
+          </div>
+        </div>        
+      )}
+
+      {/* Status da API */}
+        <footer className="mt-6 pt-3 border-t border-zinc-700 flex items-center justify-center gap-2 text-xs text-zinc-500">
+          <div
+            className={`w-2 h-2 rounded-full shrink-0 ${
+              apiStatus === "ok" ? "bg-green-500" : apiStatus === "checking" ? "bg-yellow-500" : "bg-red-500"
+            }`}
+          />
+          <span>
+            Backend: {apiStatus === "checking" ? "verificando..." : apiStatus === "ok" ? "conectado" : "falha"}
+          </span>
+        </footer>
+    </div>
+//   </Layout>
+);
     
 }

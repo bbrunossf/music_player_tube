@@ -4,6 +4,7 @@ import type { LinksFunction } from "@remix-run/node";
 //import tailwindUrl from "~/tailwind.css";
 import "./tailwind.css";
 import "./index.css";
+import "~/styles/video-downloader.css";
 
 // export const meta: MetaFunction = () => {
 //   return [
