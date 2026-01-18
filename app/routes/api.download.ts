@@ -1,9 +1,11 @@
-import type { ActionFunctionArgs } from '@remix-run/node'
+import type { ActionFunctionArgs } from '@remix-run/node';
+import { json } from '@remix-run/node'
 
 
 export async function action({ request }: ActionFunctionArgs) {
-  const formData = await request.formData()
-  const video_ids = JSON.parse(formData.get('video_ids') as string)
+  // const formData = await request.formData()
+  // const video_ids = JSON.parse(formData.get('video_ids') as string)
+  const { video_ids, format } = await request.json()
 
   try {
     //const response = await fetch('http://192.168.1.14:5000/api/download', {
@@ -20,7 +22,7 @@ export async function action({ request }: ActionFunctionArgs) {
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ video_ids })
+      body: JSON.stringify({ video_ids, format })
     })
 
     if (!response.ok) {
@@ -30,10 +32,17 @@ export async function action({ request }: ActionFunctionArgs) {
       })
     }
 
-    return new Response(JSON.stringify({ status: 'Downloads iniciados com sucesso!' }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' }
-    })
+    const data = await response.json()
+    console.log('Resposta da API de download:', data)
+
+    // return new Response(JSON.stringify({ status: 'Downloads iniciados com sucesso!' }), {
+    //   status: 200,
+    //   headers: { 'Content-Type': 'application/json' }
+    // })
+  return json({
+      job_id: data.job_id,
+      status: data.status
+    })    
   } catch (error) {
     return new Response(JSON.stringify({ error: 'Serviço indisponível' }), {
       status: 503,

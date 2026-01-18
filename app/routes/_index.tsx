@@ -13,6 +13,10 @@ import { Input } from '~/components/ui/input';
 import { json, LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 
+import { Form, useActionData } from '@remix-run/react'
+import { useDownloadProgress } from '~/hooks/useDownloadProgress'
+import { action } from './api.search';
+
 
 //função loader para carregar as variáveis de ambiente
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -24,7 +28,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 export default function Index() {
     const { apiHealthUrl } = useLoaderData<typeof loader>();
     console.log('API Health URL:', apiHealthUrl); // Verifica se a URL está correta
-
+   
     const {
         tracks,
         selected,
@@ -42,7 +46,15 @@ export default function Index() {
     //const apiHealthUrl = process.env.PUBLIC_API_URL_HEALTH ;
     const [showDownloadModal, setShowDownloadModal] = useState(false);
     const [downloadFormat, setDownloadFormat] = useState<"video" | "audio" | null>(null);
+    const [jobId, setJobId] = useState<string | null>(null);
 
+    const {
+        progress,
+        current,
+        processed,
+        total,
+        status
+    } = useDownloadProgress(jobId)
 
 
 
@@ -127,7 +139,7 @@ const iniciarDownload = (formato: "video" | "audio") => {
         return selected[id] && !tracks.some(playlist => playlist.id === id); 
     });
 
-    fetch('http://localhost:5000/api/download', {
+    fetch('/api/download', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -142,6 +154,8 @@ const iniciarDownload = (formato: "video" | "audio") => {
         return response.json();
     })
     .then(data => {
+        setJobId(data.job_id);
+        console.log("Job iniciado:", data.job_id);
         alert(data.status);
     })
     .catch(error => {
@@ -325,6 +339,8 @@ useEffect(() => {
                 </Button>
             </div>
 
+            
+
             {showDownloadModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white rounded-lg p-6 shadow-lg max-w-sm w-full">
@@ -364,6 +380,15 @@ useEffect(() => {
                     </div>
                 </div>
                 )}
+
+            {jobId && (
+                <div style={{ marginTop: 20 }}>
+                <p><strong>Status:</strong> {status}</p>
+                <p><strong>Progresso:</strong> {progress}%</p>
+                <p><strong>Vídeos:</strong> {processed} de {total}</p>
+                <p><strong>Atual:</strong> {current}</p>
+                </div>
+            )}    
         
         {/* <footer className="mt-10 flex justify-center items-center gap-2 text-sm text-muted-foreground"> */}
         <footer className="mt-10 pt-4 border-t text-center text-sm text-gray-500">
@@ -381,10 +406,11 @@ useEffect(() => {
 
         </div>
 
-        
+        {/*
         <div className="flex-1 bg-zinc-200 text-zinc-950 px-4 sm:px-6 lg:px-8">
             Conteudo da direita
         </div>
+        */}
 
         </div>
         </Layout>

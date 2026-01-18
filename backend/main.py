@@ -6,10 +6,11 @@ from pydantic import BaseModel
 from typing import Optional
 from googleapiclient.discovery import build
 import yt_dlp as youtube_dl
-from typing import List
+from typing import List, Dict
 import threading
 from urllib.parse import urlparse, parse_qs
 import re
+import uuid
 
 app = FastAPI()
 
@@ -31,10 +32,16 @@ youtube = build(
 # Configurar CORS para permitir comunicação com frontend Remix
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[frontend_origin],  # Porta padrão do Remix para modo desenvolvimento (5173)
+    allow_origins=["*"],  # Porta padrão do Remix para modo desenvolvimento (5173)
     allow_methods=["POST"],
     allow_headers=["*"],
 )
+
+jobs: Dict[str, dict] = {}
+class DownloadRequest(BaseModel):
+    video_ids: List[str]
+    format: str  # "audio" ou "video"
+
 
 class SearchRequest(BaseModel):
     query: str
@@ -243,31 +250,88 @@ def download_audio(video_id: str):
         # Retornando uma mensagem mais descritiva sobre o erro
         raise HTTPException(status_code=400, detail=f"Erro ao baixar o vídeo com ID {video_id}: {str(e)}")
 
+# @app.post("/api/download")
+# async def start_download(request: DownloadRequest):
+#     print(f"dados brutos recebidos: {request}")
+#     error_messages = []
+#     try:
+#         # Processar downloads em background
+#         def process_downloads():
+#             for video_id in request.video_ids:
+#                 try:
+#                     if request.format == "audio":
+#                         download_audio(video_id)
+#                     else:
+#                         download_video(video_id)
+#                 except HTTPException as e:
+#                     error_messages.append(str(e.detail))
+        
+#         threading.Thread(target=process_downloads).start()
+
+#         if error_messages:
+#             return {"status": "Downloads iniciados, mas houve erros.", "errors": error_messages}                        
+#         return {"status": "Downloads iniciados com sucesso!"}
+    
+#     except Exception as e:
+#         # raise HTTPException(
+#         #     status_code=500,
+#         #     detail=str(e)
+#         # )
+#         print(f"Erro ao iniciar o download: {str(e)}")
+
 @app.post("/api/download")
 async def start_download(request: DownloadRequest):
-    print(f"dados brutos recebidos: {request}")
-    error_messages = []
-    try:
-        # Processar downloads em background
-        def process_downloads():
-            for video_id in request.video_ids:
+    job_id = str(uuid.uuid4())
+
+    # Cria estrutura inicial do job
+    jobs[job_id] = {
+        "job_id": job_id,
+        "status": "running",
+        "total_videos": len(request.video_ids),
+        "processed_videos": 0,
+        "current_video": None,
+        "progress_percent": 0,
+        "errors": []
+    }
+
+    def process_downloads():
+        try:
+            for index, video_id in enumerate(request.video_ids, start=1):
+                jobs[job_id]["current_video"] = video_id
+
                 try:
                     if request.format == "audio":
                         download_audio(video_id)
                     else:
                         download_video(video_id)
-                except HTTPException as e:
-                    error_messages.append(str(e.detail))
-        
-        threading.Thread(target=process_downloads).start()
 
-        if error_messages:
-            return {"status": "Downloads iniciados, mas houve erros.", "errors": error_messages}                        
-        return {"status": "Downloads iniciados com sucesso!"}
-    
-    except Exception as e:
-        # raise HTTPException(
-        #     status_code=500,
-        #     detail=str(e)
-        # )
-        print(f"Erro ao iniciar o download: {str(e)}")
+                except Exception as e:
+                    jobs[job_id]["errors"].append(
+                        f"{video_id}: {str(e)}"
+                    )
+
+                # Atualiza progresso
+                jobs[job_id]["processed_videos"] = index
+                jobs[job_id]["progress_percent"] = int(
+                    (index / jobs[job_id]["total_videos"]) * 100
+                )
+
+            jobs[job_id]["status"] = "completed"
+
+        except Exception as e:
+            jobs[job_id]["status"] = "error"
+            jobs[job_id]["errors"].append(str(e))
+
+    threading.Thread(target=process_downloads, daemon=True).start()
+
+    return {
+        "job_id": job_id,
+        "status": "started"
+    }
+
+@app.get("/api/download/{job_id}")
+def get_download_status(job_id: str):
+    if job_id not in jobs:
+        raise HTTPException(status_code=404, detail="Job não encontrado")
+
+    return jobs[job_id]    
