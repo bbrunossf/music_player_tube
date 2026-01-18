@@ -222,7 +222,7 @@ useEffect(() => {
     <div className="page home-page min-h-screen bg-zinc-900 text-white">
       {/* <div className="w-full max-w-md mx-auto px-3 py-6"> */}
        <div className="w-full max-w-xl mx-auto px-3 py-6 sm:px-4 md:max-w-2xl lg:max-w-3xl">
-        <h1 className="text-2xl font-bold text-center mb-6 tracking-tight">
+        <h1 className="text-2xl sm:text-2xl font-bold text-center mb-6 tracking-tight">
           Video Downloader
         </h1>
 
@@ -233,39 +233,52 @@ useEffect(() => {
             value={searchurl}
             onChange={(e) => setsearchUrl(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleUnifiedInput()}
-            className="text-sm h-10 bg-zinc-800 border-none focus:ring-1 focus:ring-blue-500"
+            // className="text-sm h-10 bg-zinc-800 border-none focus:ring-1 focus:ring-blue-500"
+            className="text-base sm:text-sm h-12 sm:h-10 bg-zinc-800 border-none focus:ring-1 focus:ring-blue-500"
+
           />
           <Button 
             onClick={handleUnifiedInput} 
             size="sm" 
-            className="shrink-0 px-4 bg-blue-600 hover:bg-blue-700"
+            className="shrink-0 px-4 bg-blue-600 hover:bg-blue-700 h-12 sm:h-10"
           >
-            <span className="material-icons text-lg">search</span>
+            <span className="material-icons text-xl sm:text-lg">search</span>
           </Button>
         </div>
 
-        {jobId && (
-            <div className="mt-4 p-3 bg-white rounded-lg border text-xs space-y-1">
-                <p><span className="font-medium">Status:</span> {status}</p>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-blue-500 h-2 rounded-full transition-all" style={{ width: `${progress}%` }}></div>
-                </div>
-                <p><span className="font-medium">Vídeos:</span> {processed}/{total}</p>
-                <p className="text-gray-500 truncate">{current}</p>
-            </div>
-        )}    
+       {jobId && (
+        <div className="mb-6 p-4 bg-zinc-800 rounded-lg border border-zinc-700 text-sm sm:text-xs space-y-2">
+          <div className="flex justify-between items-center">
+            <p className="font-medium text-zinc-300">Status: <span className="text-blue-400">{status}</span></p>
+            <p className="text-zinc-400">{progress}%</p>
+          </div>
+          <div className="w-full bg-zinc-700 rounded-full h-3 sm:h-2">
+            <div 
+              className="bg-blue-500 h-3 sm:h-2 rounded-full transition-all" 
+              style={{ width: `${progress}%` }}
+            ></div>
+          </div>
+          <div className="flex justify-between">
+            <p className="text-zinc-300">
+              <span className="font-medium">Vídeos:</span> {processed}/{total}
+            </p>
+            <span className="material-icons text-sm sm:text-xs text-blue-400">cloud_download</span>
+          </div>
+          <p className="text-zinc-400 truncate text-sm sm:text-xs">{current}</p>
+        </div>
+      )} 
 
         {/* Filtros */}
         <div className="flex gap-2 mb-6 overflow-x-auto py-2">
-          <Button variant="ghost" className="rounded-full px-4 text-sm bg-zinc-800">All</Button>
-          <Button variant="ghost" className="rounded-full px-4 text-sm flex items-center gap-1">
-            <span className="material-icons text-sm">videocam</span>Video
+          <Button variant="ghost" className="rounded-full px-5 py-2 text-base sm:text-sm bg-zinc-800">All</Button>
+          <Button variant="ghost" className="rounded-full px-5 py-2 text-base sm:text-sm flex items-center gap-1">
+            <span className="material-icons text-base sm:text-sm">videocam</span>Video
           </Button>
-          <Button variant="ghost" className="rounded-full px-4 text-sm flex items-center gap-1">
-            <span className="material-icons text-sm">audiotrack</span>Audio
+          <Button variant="ghost" className="rounded-full px-5 py-2 text-base sm:text-sm flex items-center gap-1">
+            <span className="material-icons text-base sm:text-sm">audiotrack</span>Audio
           </Button>
-          <Button variant="ghost" className="rounded-full px-4 text-sm flex items-center gap-1">
-            <span className="material-icons text-sm">playlist_play</span>Playlist
+          <Button variant="ghost" className="rounded-full px-5 py-2 text-base sm:text-sm flex items-center gap-1">
+            <span className="material-icons text-base sm:text-sm">playlist_play</span>Playlist
           </Button>
         </div>
 
@@ -275,7 +288,7 @@ useEffect(() => {
             <Card key={playlist.id} className="overflow-hidden bg-zinc-800 border-none shadow-md">
               <CardContent className="p-0">
                 <div 
-                  className="p-3 cursor-pointer hover:bg-zinc-700 transition-colors"
+                  className="p-4 sm:p-3 cursor-pointer hover:bg-zinc-700 transition-colors"
                   onClick={() => handleTogglePlaylist(playlist.id)}
                 >
                   <div className="flex items-center gap-3">
@@ -283,11 +296,11 @@ useEffect(() => {
                       id={`playlist-${playlist.id}`}
                       checked={!!selected[playlist.id]}
                       onCheckedChange={() => togglePlaylist(playlist.id)}
-                      className="shrink-0 border-zinc-600"
+                      className="shrink-0 border-zinc-600 h-5 w-5 sm:h-4 sm:w-4"
                     />
                     <Label
                       htmlFor={`playlist-${playlist.id}`}
-                      className="cursor-pointer text-sm font-medium leading-tight line-clamp-2"
+                      className="cursor-pointer text-base sm:text-sm font-medium leading-tight line-clamp-2"
                     >
                       {playlist.title}
                     </Label>
@@ -297,13 +310,13 @@ useEffect(() => {
                 {expandedPlaylistId === playlist.id && (
                   <div className="border-t border-zinc-700">
                     {playlist.videos.slice(0, videosToShowMap[playlist.id] || 10).map((video) => (
-                      <div key={video.id} className="flex gap-3 p-3 hover:bg-zinc-700 border-b border-zinc-700 transition-colors">
+                      <div key={video.id} className="flex gap-3 p-4 sm:p-3 hover:bg-zinc-700 border-b border-zinc-700 transition-colors">
                         <Checkbox
                           id={`video-${video.id}`}
                           checked={!!selected[video.id]}
                           onCheckedChange={() => toggleTrack(video.id)}
                           disabled={!selected[playlist.id]}
-                          className="shrink-0 mt-1 border-zinc-600"
+                          className="shrink-0 mt-1 border-zinc-600 h-5 w-5 sm:h-4 sm:w-4"
                         />
                         <div className="relative shrink-0">
                           <img
@@ -318,20 +331,21 @@ useEffect(() => {
                         <div className="flex-1">
                           <Label
                             htmlFor={`video-${video.id}`}
-                            className="text-xs leading-tight line-clamp-2 font-medium mb-1"
+                            className="text-sm sm:text-xs leading-tight line-clamp-2 font-medium mb-1"
                           >
                             {video.title}
                           </Label>
-                          <p className="text-xs text-zinc-400">
+                          {/* <p className="text-xs text-zinc-400">
                             Channel Name • 1.2M views • 2 days ago
-                          </p>
+                          </p> */}
                         </div>
                       </div>
                     ))}
 
                     {videosToShowMap[playlist.id] < playlist.videos.length && (
                       <Button
-                        className="w-full py-2 text-xs font-medium bg-transparent hover:bg-zinc-700 text-blue-400"
+                        // className="w-full py-2 text-xs font-medium bg-transparent hover:bg-zinc-700 text-blue-400"
+                        className="w-full py-2 text-sm sm:text-xs font-medium bg-transparent hover:bg-zinc-700 text-blue-400"
                         variant="ghost"
                         onClick={() => handleLoadMoreVideos(playlist.id)}
                       >
