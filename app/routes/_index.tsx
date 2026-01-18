@@ -231,187 +231,185 @@ useEffect(() => {
 
     return (
         <Layout>
-        <div className="page home-page">
-        {/* <div className="min-h-screen flex"> */}
-        {/* <div className="min-h-screen bg-zinc-100 text-zinc-950 px-4 sm:px-6 lg:px-8"> */}
-        <div className="flex-1 bg-zinc-100 text-zinc-950 px-4 sm:px-6 lg:px-8">
+        <div className="page home-page min-h-screen">
+        <div className="w-full max-w-md mx-auto bg-zinc-100 text-zinc-950 px-3 py-4">
 
-            {/* <h1 className="text-2xl mb-4">Playlists do YouTube</h1> */}
-            <h1 className="text-3xl font-semibold text-center mb-6 tracking-tight">
+            <h1 className="text-xl font-semibold text-center mb-4 tracking-tight">
                 YouTube Playlist Downloader
             </h1>
 
-
-            <div className="flex gap-2 mb-3">
+            <div className="flex gap-1.5 mb-2">
                 <Input
                     placeholder="URL da playlist"
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
+                    className="text-sm h-9"
                 />
-                <Button onClick={handleImportUrl}>
+                <Button onClick={handleImportUrl} size="sm" className="shrink-0 px-3">
                     OK
                 </Button>
             </div>
 
-            <div className="flex gap-2 mb-5">
+            <div className="flex gap-1.5 mb-4">
                 <Input
                     placeholder="Nome da playlist"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
+                    className="text-sm h-9"
                 />
-                <Button onClick={handleSearch}>
+                <Button onClick={handleSearch} size="sm" className="shrink-0 px-3">
                     Pesquisar
                 </Button>
             </div>
+
+            <div className="space-y-2">
             {tracks.map((playlist) => (
-                <Card key={playlist.id}>
-                    <CardContent>
-                        <div className="flex items-center">
+                <Card key={playlist.id} className="overflow-hidden">
+                    <CardContent className="p-3">
+                        <div className="flex items-center gap-2">
                             <Checkbox
                                 id={`playlist-${playlist.id}`}
                                 checked={!!selected[playlist.id]}
                                 onCheckedChange={() => togglePlaylist(playlist.id)} 
+                                className="shrink-0"
                             />
-                            <Label htmlFor={`playlist-${playlist.id}`} className="cursor-pointer" onClick={() => handleTogglePlaylist(playlist.id)}>
+                            <Label 
+                                htmlFor={`playlist-${playlist.id}`} 
+                                className="cursor-pointer text-sm font-medium leading-tight line-clamp-2" 
+                                onClick={() => handleTogglePlaylist(playlist.id)}
+                            >
                                 {playlist.title}
                             </Label>
                         </div>
 
                         {expandedPlaylistId === playlist.id && (
-                            <div className="ml-4 mt-2">
+                            <div className="mt-3 pt-3 border-t">
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    className="mb-2"
+                                    className="w-full mb-3 text-xs h-8"
                                     onClick={() => selecionarTodosDaPlaylist(playlist.id)}
                                 >
                                     Selecionar todos os visíveis
                                 </Button>
 
                                 {playlist.videos.length > 0 ? (
-                                    //v2.1 assim ficou mais bonito
-                                    // <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-4">
-                                        {playlist.videos.slice(0, videosToShowMap[playlist.id] || 10).map((video) => {
-                                            //console.log(video);
-                                            return (
-                                            <Card key={video.id} className="p-2">                                                
-                                                <CardContent>
-                                                    <div className="flex flex-col items-start">
-                                                        <Checkbox
-                                                            id={`video-${video.id}`}
-                                                            checked={!!selected[video.id]}
-                                                            onCheckedChange={() => toggleTrack(video.id)}
-                                                            disabled={!selected[playlist.id]} 
-                                                        />
-                                                        <img
-                                                            src={video.thumbnail}
-                                                            alt={video.title}
-                                                            className="w-full h-auto mt-2 mb-2"
-                                                        />
-                                                        <Label htmlFor={`video-${video.id}`} className="text-base sm:text-sm">
-                                                            {video.title}
-                                                        </Label>
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                        )})}
+                                    <div className="space-y-2">
+                                        {playlist.videos.slice(0, videosToShowMap[playlist.id] || 10).map((video) => (
+                                            <div key={video.id} className="flex gap-2 p-2 bg-white rounded-lg border">
+                                                <Checkbox
+                                                    id={`video-${video.id}`}
+                                                    checked={!!selected[video.id]}
+                                                    onCheckedChange={() => toggleTrack(video.id)}
+                                                    disabled={!selected[playlist.id]} 
+                                                    className="shrink-0 mt-1"
+                                                />
+                                                <img
+                                                    src={video.thumbnail}
+                                                    alt={video.title}
+                                                    className="w-20 h-14 object-cover rounded shrink-0"
+                                                />
+                                                <Label 
+                                                    htmlFor={`video-${video.id}`} 
+                                                    className="text-xs leading-tight line-clamp-3 flex-1"
+                                                >
+                                                    {video.title}
+                                                </Label>
+                                            </div>
+                                        ))}
                                     </div>
-
-
                                 ) : (
-                                    <p>Sem vídeos disponíveis nessa playlist.</p>
+                                    <p className="text-xs text-gray-500">Sem vídeos disponíveis.</p>
                                 )}
-                                {/* <Button className="mt-2" onClick={() =>  Lógica para carregar mais videos */}
+                                
                                 {videosToShowMap[playlist.id] < playlist.videos.length && (
-                                    <Button className="mt-2" onClick={() => handleLoadMoreVideos(playlist.id)}>
-                                    Carregar mais vídeos
-                                </Button>
+                                    <Button 
+                                        className="w-full mt-3 text-xs h-8" 
+                                        variant="secondary"
+                                        onClick={() => handleLoadMoreVideos(playlist.id)}
+                                    >
+                                        Carregar mais vídeos
+                                    </Button>
                                 )}
                             </div>
                         )}
                     </CardContent>
                 </Card>
             ))}
-            <div className="flex justify-center mt-8">
-                <Button size="lg" onClick={handleDownload}>
+            </div>
+
+            <div className="sticky bottom-0 bg-zinc-100 pt-3 pb-2 -mx-3 px-3 border-t mt-4">
+                <Button className="w-full h-11 text-sm font-medium" onClick={handleDownload}>
                     Baixar Videos Selecionados
                 </Button>
             </div>
 
-            
-
             {showDownloadModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-6 shadow-lg max-w-sm w-full">
-                    <h2 className="text-lg font-semibold mb-4">Escolha o formato do download</h2>
+                <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50 p-3">
+                    <div className="bg-white rounded-xl p-4 shadow-lg w-full max-w-md">
+                        <h2 className="text-base font-semibold mb-4 text-center">Escolha o formato</h2>
 
-                    <div className="flex justify-around mb-4">
-                        <Button
-                        variant={downloadFormat === "video" ? "default" : "outline"}
-                        onClick={() => setDownloadFormat("video")}
-                        >
-                        Vídeo
-                        </Button>
-                        <Button
-                        variant={downloadFormat === "audio" ? "default" : "outline"}
-                        onClick={() => setDownloadFormat("audio")}
-                        >
-                        Áudio
-                        </Button>
-                    </div>
+                        <div className="grid grid-cols-2 gap-2 mb-4">
+                            <Button
+                                variant={downloadFormat === "video" ? "default" : "outline"}
+                                onClick={() => setDownloadFormat("video")}
+                                className="h-12"
+                            >
+                                Vídeo
+                            </Button>
+                            <Button
+                                variant={downloadFormat === "audio" ? "default" : "outline"}
+                                onClick={() => setDownloadFormat("audio")}
+                                className="h-12"
+                            >
+                                Áudio
+                            </Button>
+                        </div>
 
-                    <div className="flex justify-between">
-                        <Button variant="ghost" onClick={() => setShowDownloadModal(false)}>
-                        Cancelar
-                        </Button>
-                        <Button
-                        onClick={() => {
-                            if (!downloadFormat) {
-                            alert("Selecione uma opção antes de continuar.");
-                            return;
-                            }
-                            iniciarDownload(downloadFormat);
-                        }}
-                        >
-                        OK
-                        </Button>
-                    </div>
+                        <div className="grid grid-cols-2 gap-2">
+                            <Button variant="ghost" onClick={() => setShowDownloadModal(false)} className="h-10">
+                                Cancelar
+                            </Button>
+                            <Button
+                                className="h-10"
+                                onClick={() => {
+                                    if (!downloadFormat) {
+                                        alert("Selecione uma opção.");
+                                        return;
+                                    }
+                                    iniciarDownload(downloadFormat);
+                                }}
+                            >
+                                OK
+                            </Button>
+                        </div>
                     </div>
                 </div>
-                )}
+            )}
 
             {jobId && (
-                <div style={{ marginTop: 20 }}>
-                <p><strong>Status:</strong> {status}</p>
-                <p><strong>Progresso:</strong> {progress}%</p>
-                <p><strong>Vídeos:</strong> {processed} de {total}</p>
-                <p><strong>Atual:</strong> {current}</p>
+                <div className="mt-4 p-3 bg-white rounded-lg border text-xs space-y-1">
+                    <p><span className="font-medium">Status:</span> {status}</p>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="bg-blue-500 h-2 rounded-full transition-all" style={{ width: `${progress}%` }}></div>
+                    </div>
+                    <p><span className="font-medium">Vídeos:</span> {processed}/{total}</p>
+                    <p className="text-gray-500 truncate">{current}</p>
                 </div>
             )}    
         
-        {/* <footer className="mt-10 flex justify-center items-center gap-2 text-sm text-muted-foreground"> */}
-        <footer className="mt-10 pt-4 border-t text-center text-sm text-gray-500">
-            <div
-                className={`w-3 h-3 rounded-full ${
-                    apiStatus === "ok" ? "bg-green-500" : "bg-red-500"
-                }`}
-                title={apiStatus === "ok" ? "Conectado ao backend" : "Erro de conexao"}
-            ></div>
-            <span>
-                Conexao com o backend (a cada 30s):{" "}
-                {apiStatus === "checking" ? "verificando..." : apiStatus === "ok" ? "ativa" : "falha"}
-            </span>
-        </footer>
+            <footer className="mt-6 pt-3 border-t flex items-center justify-center gap-2 text-xs text-gray-500">
+                <div
+                    className={`w-2 h-2 rounded-full shrink-0 ${
+                        apiStatus === "ok" ? "bg-green-500" : apiStatus === "checking" ? "bg-yellow-500" : "bg-red-500"
+                    }`}
+                />
+                <span>
+                    Backend: {apiStatus === "checking" ? "verificando..." : apiStatus === "ok" ? "conectado" : "falha"}
+                </span>
+            </footer>
 
         </div>
-
-        {/*
-        <div className="flex-1 bg-zinc-200 text-zinc-950 px-4 sm:px-6 lg:px-8">
-            Conteudo da direita
-        </div>
-        */}
-
         </div>
         </Layout>
     );
