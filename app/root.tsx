@@ -16,6 +16,7 @@ export const meta: MetaFunction = () => {
   return [
     { title: "YouTube Playlist Downloader" },
     { name: "description", content: "Ferramenta para baixar videos e audios de playlists do YouTube" },
+    { name: "viewport", content: "width=device-width, initial-scale=1.0, maximum-scale=1.0" }
   ];
 };
 
@@ -34,19 +35,23 @@ export const links: LinksFunction = () => [
     href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
   },
   //{ rel: "stylesheet", href: tailwindUrl }
+  {
+    rel: "stylesheet",
+    href: "https://fonts.googleapis.com/icon?family=Material+Icons"
+  }
   
 ];
 
 //export function Layout({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
-    <html lang="pt-BR" className="bg-gray-900 text-black">
+    <html lang="pt-BR" className="bg-zinc-900 text-white">
       <head>
         <meta charSet="utf-8" />        
         <Meta />
         <Links />
       </head>
-      <body>
+      <body className="min-h-screen bg-zinc-900">
         <Outlet />
         <ScrollRestoration />
         <Scripts />

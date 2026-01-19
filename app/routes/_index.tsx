@@ -221,7 +221,7 @@ useEffect(() => {
 //   <Layout>
     <div className="page home-page min-h-screen bg-zinc-900 text-white">
       {/* <div className="w-full max-w-md mx-auto px-3 py-6"> */}
-       <div className="w-full max-w-xl mx-auto px-4 py-6">
+       <div className="w-full sm:w-[90%] md:w-[85%] lg:w-[75%] xl:w-[65%] mx-auto px-4 py-6">
         <h1 className="text-3xl font-bold text-center mb-6 tracking-tight">
           Video Downloader
         </h1>
