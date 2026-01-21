@@ -38,7 +38,7 @@ export function LibrarySelector({
             : "border-border hover:bg-secondary"
         }
       >
-        <Library className="w-4 h-4 mr-2" />
+        <Library className="w-3 h-4 mr-2" />
         Todas
       </Button>
 
@@ -58,7 +58,7 @@ export function LibrarySelector({
                 : "border-border hover:bg-secondary"
             }
           >
-            <Icon className="w-4 h-4 mr-2" />
+            <Icon className="w-3 h-4 mr-2" />
             {library.Name}
           </Button>
         );

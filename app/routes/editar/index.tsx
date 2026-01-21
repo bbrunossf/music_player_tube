@@ -5,6 +5,7 @@ import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 
 import Layout from '~/components/layout';
+import { Link } from "@remix-run/react";
 import { PlaylistEditPanel } from '~/components/PlaylistEditPanel';
 import { LibrarySelector } from "~/components/LibrarySelector";
 import { json, LoaderFunctionArgs } from "@remix-run/node";
@@ -77,7 +78,7 @@ export default function EditarPlaylists() {
     infinite: true,
     speed: 500,
     slidesToShow: 3,
-    slidesToScroll: 1,
+    slidesToScroll: 3,
     responsive: [
       {
         breakpoint: 768,
@@ -207,17 +208,15 @@ export default function EditarPlaylists() {
     alert("Playlist atualizada com sucesso.");
   };
 
+  //o Slider tem que ser assim porque esse não tem suporte ao SSR do Remix
    const SliderComponent = typeof window === 'undefined' ? Slider.default : Slider;
 
    const defaultSvg =
   "data:image/svg+xml;utf8," +
   encodeURIComponent(`
-    <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'>
-      <rect width='200' height='200' fill='#1f2937'/>
-      <g transform='translate(50,40) scale(0.6)'>
-        <path d='M70 60v80c0 11 9 20 20 20s20-9 20-20V80h20v60c0 11 9 20 20 20s20-9 20-20V60z' fill='#9ca3af'/>
-      </g>
-    </svg>
+    <svg xmlns="http://www.w3.org/2000/svg" 
+    xml:space="preserve" width="2048" height="2048" 
+    style="shape-rendering:geometricPrecision;text-rendering:geometricPrecision;image-rendering:optimizeQuality;fill-rule:evenodd;clip-rule:evenodd"><defs><style>.fil0{fill:#424242;fill-rule:nonzero}</style></defs><g id="Layer_x0020_1"><g id="_337034264"><path id="_337034576" class="fil0" d="M1430.7 1228.39c56.217 0 107.118 22.792 143.962 59.635 36.843 36.843 59.634 87.744 59.634 143.962 0 56.217-22.79 107.118-59.634 143.961-36.844 36.845-87.745 59.635-143.962 59.635-56.217 0-107.118-22.79-143.961-59.635-36.844-36.843-59.635-87.744-59.635-143.96 0-56.22 22.79-107.12 59.635-143.963 36.843-36.843 87.744-59.635 143.961-59.635z"/><path id="_337034192" d="m1533.79 259.873-.006-.058 30.878-3.429c34.35-3.817 65.42 21.038 69.234 55.39.544 4.912.382 2.479.382 7.058v1081.33c0 34.613-28.08 62.694-62.694 62.694-34.613 0-62.694-28.08-62.694-62.694V388.684l-685.712 76.19v1115.53c0 34.615-28.08 62.694-62.694 62.694-34.613 0-62.694-28.08-62.694-62.694V408.814c0-32.915 25.44-58.884 57.661-62.464l778.34-86.482z" style="fill:#424242"/><path id="_337034120" class="fil0" d="M618.439 1382.53c56.531 0 107.717 22.918 144.767 59.968 37.05 37.05 59.968 88.236 59.968 144.767 0 56.531-22.918 107.717-59.968 144.767-37.05 37.049-88.236 59.967-144.767 59.967-56.531 0-107.717-22.918-144.767-59.967-37.049-37.05-59.968-88.235-59.968-144.767 0-56.53 22.92-107.717 59.968-144.767 37.05-37.05 88.235-59.968 144.767-59.968z"/></g></g><path style="fill:none" d="M0 0h2048v2048H0z"/></svg>
   `);
 
 
@@ -272,6 +271,33 @@ export default function EditarPlaylists() {
           </SliderComponent>
         </div>
       </div>
+
+      {/* caixa de filtro */}
+      <div className="flex gap-4 mb-4">
+        <input
+          type="text"
+          placeholder="Filtrar itens..."
+          value={textFilter}
+          onChange={(e) => setTextFilter(e.target.value)}
+          className="border p-2 rounded w-full bg-black text-white"
+        />
+        <Button
+          variant="outline"
+          onClick={() => fetchItems(selectedLibrary || undefined)}
+          disabled={loading}
+          className="rounded-2xl border p-2 bg-green-300 hover:bg-green-400 text-black font-bold"
+        >
+          Atualizar
+        </Button>
+      </div>
+
+      <div className="flex gap-4 mb-4">
+        <LibrarySelector
+          libraries={libraries}
+          selectedLibrary={selectedLibrary}
+          onSelect={handleLibrarySelect}
+        />
+      </div>
           
       {/* Tabs para ‘in playlist’ ou ‘add items’ */}
       <div className="flex justify-center space-x-6 mb-4">
@@ -319,7 +345,7 @@ export default function EditarPlaylists() {
                 >
                   <div style={{ height: 180, position: 'relative' }}>
                     <img
-                      src={getImageUrl(item, 'Primary')}
+                      src={getImageUrl(item, 'Primary') || defaultSvg}
                       alt={item.Name}
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
@@ -394,9 +420,9 @@ export default function EditarPlaylists() {
                   >
                     <div style={{ height: 180 }}>
                       <img
-                        src={getImageUrl(item, 'Primary')}
+                        src={getImageUrl(item, 'Primary') || defaultSvg}
                         alt={item.Name}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        style={{ width: '100%', height: '100%', objectFit: 'scale-down' }}
                       />
                     </div>
 
@@ -437,6 +463,34 @@ export default function EditarPlaylists() {
           </div>
         )}
     </div>   
+
+     {/* Barra de navegação inferior */}
+      <div className="fixed bottom-0 left-0 right-0 bg-zinc-800 border-t border-zinc-700 py-2 px-4">
+        <div className="max-w-md mx-auto">
+          
+          
+          <div className="flex justify-between mt-4 text-zinc-400">
+            <Link to="/">
+            <Button variant="ghost" className="flex flex-col items-center text-xs">
+              <span className="material-icons">home</span>
+              Home
+            </Button>
+            </Link>
+            
+              <Button variant="ghost" className="flex flex-col items-center text-xs">
+                <span className="material-icons">download_for_offline</span>                
+                Library
+              </Button>
+            
+            <Button variant="ghost" className="flex flex-col items-center text-xs">
+              <span className="material-icons">settings</span>
+              Config
+            </Button>
+          </div>
+        </div>
+      </div>
+
+
     </div>     
 );
   

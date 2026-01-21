@@ -384,8 +384,8 @@ useEffect(() => {
             
             <div className="flex justify-between mt-4 text-zinc-400">
               <Button variant="ghost" className="flex flex-col items-center text-xs">
-                <span className="material-icons">search</span>
-                Search
+                <span className="material-icons">home</span>
+                Home
               </Button>
               <Link to="/editar">
                 <Button variant="ghost" className="flex flex-col items-center text-xs">
