@@ -112,143 +112,66 @@ export default function Index() {
     return await createPlaylist(name, itemIds, mediaType);
   };
 
-  return (
-    <Layout>
-    {/* <div className="min-h-screen bg-background flex"> */}
-    <div className="p-6 grid grid-cols-[1fr,auto] gap-6 h-screen overflow-hidden">
-      {/* Main Content */}
-      {/* <div className="flex-1 flex flex-col"> */}
-      <div className="space-y-6 overflow-y-auto h-full">
-        {/* Header */}
-        <header className="border-b border-border p-4 lg:p-6">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-              {/* Logo & Title */}
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl gradient-primary shadow-glow">
-                  <Clapperboard className="w-6 h-6 text-primary-foreground" />
-                </div>
-                <div>
-                  <h1 className="font-display text-2xl font-bold text-gradient">
-                    Jellyfin Playlist
-                  </h1>
-                  <p className="text-sm text-muted-foreground">
-                    Gerencie suas playlists facilmente
-                  </p>
-                </div>
-              </div>
-
-              {/* Config Panel */}
-              <div className="lg:w-96">
-                <ConfigPanel config={config} onConnect={handleConnect} />
-              </div>
-            </div>
+  return (    
+    <div className="min-h-screen bg-gray-100 flex flex-col">    
+      {/* Header */}
+      <header className="bg-white shadow">
+          <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-gray-800">Jellyfin Playlist</h1>
+            <ConfigPanel config={config} onConnect={handleConnect} />
           </div>
-        </header>
+      </header>
 
-        {/* Content Area */}
-        <main className="flex-1 overflow-auto p-4 lg:p-6">
-          <div className="max-w-7xl mx-auto space-y-6">
-            {/* Error Alert */}
-            {error && (
-              <Alert variant="destructive" className="animate-fade-in">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
+      {/* Área principal em duas colunas */}
+      <main className="flex-1 overflow-hidden">
+        <div className="max-w-7xl mx-auto h-full flex gap-6 p-4">
 
-            
-            
+          {/* Coluna esquerda: filtros + grid/list */}
+          <div className="flex-1 flex flex-col overflow-hidden">
 
-            {/* Not Configured State */}
-            {!isConfigured && (
-              <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
-                <div className="p-6 rounded-full gradient-primary shadow-glow mb-6">
-                  <Clapperboard className="w-16 h-16 text-primary-foreground" />
-                </div>
-                <h2 className="font-display text-2xl font-bold text-foreground mb-2">
-                  Bem-vindo ao Jellyfin Playlist
-                </h2>
-                <p className="text-muted-foreground text-center max-w-md">
-                  Configure as credenciais do seu servidor Jellyfin para começar
-                  a criar playlists.
-                </p>
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          
+          {!isConfigured && (
+            <div className="flex flex-col items-center justify-center flex-1">
+              <h2 className="text-2xl font-bold mb-2">Bem-vindo ao Jellyfin Playlist</h2>
+              <p className="text-center max-w-md">Configure as credenciais do seu servidor Jellyfin para começar a criar playlists.</p>
+            </div>
+          )}
+
+          {isConfigured && (
+            <>
+              <div className="flex gap-4 mb-4">
+                <LibrarySelector
+                  libraries={libraries}
+                  selectedLibrary={selectedLibrary}
+                  onSelect={handleLibrarySelect}
+                />
+                <input
+                  type="text"
+                  placeholder="Filtrar itens..."
+                  value={textFilter}
+                  onChange={(e) => setTextFilter(e.target.value)}
+                  className="border p-2 rounded w-full"
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => fetchItems(selectedLibrary || undefined)}
+                  disabled={loading}
+                >
+                  Atualizar
+                </Button>
               </div>
-            )}
 
-            {/* Library Content */}
-            {isConfigured && (
-              <>
-                {/* Library Selector & Controls */}
-                {libraries.length > 0 && (
-                  <div className="flex flex-col gap-4">
-                    <div className="flex items-center justify-between gap-4 flex-wrap">
-                      <LibrarySelector
-                        libraries={libraries}
-                        selectedLibrary={selectedLibrary}
-                        onSelect={handleLibrarySelect}
-                      />
-                      {/* filtro de texto para itens da playlist */}            
-                      <div className="flex items-center space-x-2">
-                        <label className="block text-sm font-medium">Filtro</label>
-                        <input
-                          type="text"                  
-                          placeholder="Filtrar itens..."
-                          value={textFilter}
-                          onChange={(e) => setTextFilter(e.target.value)}
-                          className="bg-background text-foreground border p-2 rounded w-full"
-                        />
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <ViewToggle
-                          viewMode={viewMode}
-                          onViewModeChange={setViewMode}
-                        />
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            fetchItems(selectedLibrary || undefined)
-                          }
-                          disabled={loading}
-                          className="border-border hover:bg-secondary"
-                        >
-                          <RefreshCw
-                            className={`w-4 h-4 mr-2 ${
-                              loading ? "animate-spin" : ""
-                            }`}
-                          />
-                          Atualizar
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Selection Info */}
-                {selectedItems.length > 0 && (
-                  <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 border border-primary/20 animate-fade-in">
-                    <span className="text-sm font-medium text-primary">
-                      {selectedItems.length}{" "}
-                      {selectedItems.length === 1
-                        ? "item selecionado"
-                        : "itens selecionados"}
-                    </span>
-                  </div>
-                )}
-
-                {/* Media Grid/List */}
+              {/* Área rolável dos cards */}
+              <div className="flex-1 overflow-y-auto pr-2">
                 {viewMode === "grid" ? (
                   <MediaGrid
                     items={filteredItems}
-                    selectedIds={selectedIds}
-                    onToggleItem={handleToggleItem}
-                    getImageUrl={getImageUrl}
-                    loading={loading}
-                  />
-                ) : loading ? (
-                  <MediaGrid
-                    items={[]}
                     selectedIds={selectedIds}
                     onToggleItem={handleToggleItem}
                     getImageUrl={getImageUrl}
@@ -262,25 +185,23 @@ export default function Index() {
                     getImageUrl={getImageUrl}
                   />
                 )}
-              </>
-            )}
+              </div>
+            </>            
+          )}
           </div>
-        </main>
-      </div>
 
-      <div className="flex flex-col gap-4 overflow-y-auto h-full">
-        {/* Playlist Sidebar */}
-        {isConfigured && (
-          <PlaylistPanel
-            selectedItems={selectedItems}
-            onRemoveItem={handleRemoveItem}
-            onClearAll={handleClearAll}
-            onCreatePlaylist={handleCreatePlaylist}
-            getImageUrl={getImageUrl}
-          />
-        )}
-      </div>
-    </div>
-  </Layout>
+          {/* Coluna direita: Playlist Panel */}
+          <aside className="bg-gray-200 w-1/4 p-4">
+            <PlaylistPanel
+              selectedItems={selectedItems}
+              onRemoveItem={handleRemoveItem}
+              onClearAll={handleClearAll}
+              onCreatePlaylist={handleCreatePlaylist}
+              getImageUrl={getImageUrl}
+            />
+          </aside>
+        </div>
+      </main>    
+  </div>
   );
 }

@@ -16,6 +16,8 @@ import { useLoaderData } from "@remix-run/react";
 import { Form, useActionData } from '@remix-run/react'
 import { useDownloadProgress } from '~/hooks/useDownloadProgress'
 import { action } from './api.search';
+import { Link } from "@remix-run/react";
+
 
 
 //função loader para carregar as variáveis de ambiente
@@ -180,6 +182,7 @@ const iniciarDownload = (formato: "video" | "audio") => {
             alert('Por favor, insira uma URL ou termo de pesquisa');
         }
         };
+    
 
 
 
@@ -267,7 +270,7 @@ useEffect(() => {
         </div>
       )} 
 
-        {/* Filtros */}
+        {/* Filtros
         <div className="flex gap-3 mb-6 overflow-x-auto py-3">
           <Button variant="ghost" className="rounded-full px-6 py-3 text-lg bg-zinc-800 h-12 min-w-[80px]">All</Button>
           <Button variant="ghost" className="rounded-full px-6 py-3 text-lg flex items-center gap-2 bg-zinc-800 h-12 min-w-[100px]">
@@ -279,35 +282,44 @@ useEffect(() => {
           <Button variant="ghost" className="rounded-full px-6 py-3 text-lg flex items-center gap-2 bg-zinc-800 h-12 min-w-[120px]">
             <span className="material-icons text-lg">playlist_play</span>Playlist
           </Button>
-        </div>
+        </div>  */}
 
         {/* Lista de vídeos */}
         <div className="space-y-5">
           {tracks.map((playlist) => (
             <Card key={playlist.id} className="overflow-hidden bg-zinc-800 border-none shadow-md">
               <CardContent className="p-0">
-                <div 
-                  className="p-5 cursor-pointer hover:bg-zinc-700 transition-colors"
-                  onClick={() => handleTogglePlaylist(playlist.id)}
-                >
+                <div className="p-5 hover:bg-zinc-700 transition-colors">
                   <div className="flex items-center gap-4">
                     <Checkbox
                       id={`playlist-${playlist.id}`}
                       checked={!!selected[playlist.id]}
                       onCheckedChange={() => togglePlaylist(playlist.id)}
                       className="shrink-0 border-zinc-600 h-6 w-6"
+                      // Impedir propagação para que o clique no checkbox não afete outros elementos
+                      onClick={(e) => e.stopPropagation()}
                     />
-                    <Label
-                      htmlFor={`playlist-${playlist.id}`}
-                      className="cursor-pointer text-lg font-medium leading-tight line-clamp-2"
+                    <div 
+                      className="flex-1 cursor-pointer"
+                      onClick={() => handleTogglePlaylist(playlist.id)}
                     >
-                      {playlist.title}
-                    </Label>
+                      <span
+                        className="text-lg font-medium leading-tight line-clamp-2"
+                      >
+                        {playlist.title}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
                 {expandedPlaylistId === playlist.id && (
-                  <div className="border-t border-zinc-700">
+                  <div className="border-t border-zinc-700 p-4">
+                  <Button 
+                    className="w-full mb-3 h-10 text-base bg-blue-600 hover:bg-blue-700 text-white" 
+                    onClick={() => selecionarTodosDaPlaylist(playlist.id)}
+                  >
+                    Selecionar Todos
+                  </Button>
                     {playlist.videos.slice(0, videosToShowMap[playlist.id] || 10).map((video) => (
                       <div key={video.id} className="flex gap-4 p-5 hover:bg-zinc-700 border-b border-zinc-700 transition-colors">
                         <Checkbox
@@ -316,6 +328,7 @@ useEffect(() => {
                           onCheckedChange={() => toggleTrack(video.id)}
                           disabled={!selected[playlist.id]}
                           className="shrink-0 mt-1 border-zinc-600 h-6 w-6"
+                          onClick={(e) => e.stopPropagation()}
                         />
                         <div className="relative shrink-0">
                           <img
@@ -323,14 +336,14 @@ useEffect(() => {
                             alt={video.title}
                             className="w-32 h-20 object-cover rounded"
                           />
-                          <div className="absolute bottom-1 right-1 bg-black/70 text-sm px-1 rounded">
+                          {/* <div className="absolute bottom-1 right-1 bg-black/70 text-sm px-1 rounded">
                             12:45
-                          </div>
+                          </div> voltar com a função para exibir o tempo do vídeo e o ícone de duração*/}
                         </div>
                         <div className="flex-1">
                           <Label
                             htmlFor={`video-${video.id}`}
-                            className="text-base leading-tight line-clamp-2 font-medium mb-2"
+                            className="text-base leading-tight line-clamp-2 font-medium mb-2 block"
                           >
                             {video.title}
                           </Label>
@@ -374,10 +387,12 @@ useEffect(() => {
                 <span className="material-icons">search</span>
                 Search
               </Button>
-              <Button variant="ghost" className="flex flex-col items-center text-xs">
-                <span className="material-icons">download_for_offline</span>
-                Library
-              </Button>
+              <Link to="/editar">
+                <Button variant="ghost" className="flex flex-col items-center text-xs">
+                  <span className="material-icons">download_for_offline</span>                
+                  Library
+                </Button>
+              </Link>
               <Button variant="ghost" className="flex flex-col items-center text-xs">
                 <span className="material-icons">settings</span>
                 Config

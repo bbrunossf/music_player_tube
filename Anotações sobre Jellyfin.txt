@@ -258,3 +258,9 @@ Environment=PATH=/usr/bin:/usr/local/bin
 
 [Install]
 WantedBy=multi-user.target
+
+
+
+bibliotecas para carrossel:
+https://stackoverflow.com/questions/78469627/problem-with-react-slick-element-type-is-invalid
+react-slick
