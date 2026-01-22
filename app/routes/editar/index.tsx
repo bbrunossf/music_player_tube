@@ -75,7 +75,7 @@ export default function EditarPlaylists() {
 
   const sliderSettings = {
     dots: true,
-    infinite: true,
+    infinite: false,
     speed: 500,
     slidesToShow: 3,
     slidesToScroll: 3,
@@ -263,7 +263,7 @@ export default function EditarPlaylists() {
                       }}
                     />
                     </div>
-                    <h3 className="text-sm mt-2 truncate">{playlist.Name}</h3>
+                    <h3 className="text-sm mt-2 break-words">{playlist.Name}</h3>
                   </div>
                 </div>
               );
