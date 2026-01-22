@@ -224,7 +224,15 @@ def download_video(video_id: str):
     ydl_opts = {
         'format': 'best',  # Define que quer baixar o melhor formato de vídeo #VOU DEIXAR O DEFAULT MESMO
         'outtmpl': 'downloads/videos/%(title)s.%(ext)s',  # Define o template do nome do arquivo
-        'postprocessors': [],  # Nenhum postprocessador, pois queremos salvar o vídeo completo
+        
+        'addmetadata': True,
+        'embedmetadata': True,
+        'writethumbnail': True,
+        
+        'postprocessors': [
+        {
+            'key': 'FFmpegMetadata',
+        }],  # Nenhum postprocessador, pois queremos salvar o vídeo completo
     }
 
     try:
@@ -236,12 +244,25 @@ def download_video(video_id: str):
 def download_audio(video_id: str):
     ydl_opts = {
         'format': 'bestaudio/best',
-        'outtmpl': 'downloads/musicas/%(title)s.%(ext)s',
+        'outtmpl': 'downloads/musicas/%(artist,creator)s/%(title)s.%(ext)s',
+        
+        'addmetadata': True,
+        'embedmetadata': True,
+        'writethumbnail': True,
+        'embedthumbnail': True,
+        
+        'parse_metadata': [
+            'title:%(artist)s - %(title)s'
+        ],
+        
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
             'preferredquality': '192',
-        }],
+        },
+        {'key': 'EmbedThumbnail'},
+        {'key': 'FFmpegMetadata'},
+        ],
     }    
     try:
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
@@ -250,34 +271,6 @@ def download_audio(video_id: str):
         # Retornando uma mensagem mais descritiva sobre o erro
         raise HTTPException(status_code=400, detail=f"Erro ao baixar o vídeo com ID {video_id}: {str(e)}")
 
-# @app.post("/api/download")
-# async def start_download(request: DownloadRequest):
-#     print(f"dados brutos recebidos: {request}")
-#     error_messages = []
-#     try:
-#         # Processar downloads em background
-#         def process_downloads():
-#             for video_id in request.video_ids:
-#                 try:
-#                     if request.format == "audio":
-#                         download_audio(video_id)
-#                     else:
-#                         download_video(video_id)
-#                 except HTTPException as e:
-#                     error_messages.append(str(e.detail))
-        
-#         threading.Thread(target=process_downloads).start()
-
-#         if error_messages:
-#             return {"status": "Downloads iniciados, mas houve erros.", "errors": error_messages}                        
-#         return {"status": "Downloads iniciados com sucesso!"}
-    
-#     except Exception as e:
-#         # raise HTTPException(
-#         #     status_code=500,
-#         #     detail=str(e)
-#         # )
-#         print(f"Erro ao iniciar o download: {str(e)}")
 
 @app.post("/api/download")
 async def start_download(request: DownloadRequest):
