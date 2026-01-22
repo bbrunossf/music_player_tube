@@ -173,13 +173,18 @@ export function useJellyfin(initialConfig: JellyfinConfig) {
 
       try {
         const baseUrl = config.url.replace(/\/$/, "");
+        const params = new URLSearchParams({
+          ids: itemIds.join(","),
+          UserId: config.userId,
+          api_key: "aa11489164f544f7b4ac8b3a0c95c1a8",
+        });
 
         const response = await fetch(
-          `${baseUrl}/Users/${config.userId}/Playlists/${playlistId}/Items`,
+          `${baseUrl}/Playlists/${playlistId}/Items?${params.toString()}`,
           {
             method: "POST",
             headers: getHeaders(),
-            body: JSON.stringify({ Ids: itemIds }),
+            //não usa BODY, usa query params            
           }
         );
 

@@ -44,6 +44,7 @@ export default function EditarPlaylists() {
     isConfigured,
     fetchLibraries,
     libraries,
+    createPlaylist
   } = useJellyfin({ url, apiKey, userId });
 
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
@@ -147,7 +148,8 @@ export default function EditarPlaylists() {
       const exists = prev.find((i) => i.Id === item.Id);
       if (exists) {
         return prev.filter((i) => i.Id !== item.Id);
-      }
+      };
+      console.log("Adicionando item:", item);
       return [...prev, item];
     });
   };
@@ -195,6 +197,8 @@ export default function EditarPlaylists() {
       return false;
     }
   };
+
+  
 
   const handleSave = async () => {
     if (!selectedPlaylistId) return;
@@ -321,6 +325,14 @@ export default function EditarPlaylists() {
         {activeTab === 'inPlaylist' && (
           // <div className="playlist-cards grid grid-cols-2 gap-3 py-2 overflow-y-auto max-h-[calc(100vh-200px)]">
           <div className="playlist-cards grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 py-2 overflow-y-auto max-h-[calc(100vh-260px)] px-2">
+            <div>                
+                  <button
+                    className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded"
+                    onClick={handleSave}
+                  >
+                    Salvar Alterações
+                  </button>
+                </div> 
             {/* style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(2, 1fr)',
@@ -331,7 +343,7 @@ export default function EditarPlaylists() {
           > */}
             {selectedItems.length === 0 ? (
               <div>Nenhum item nesta playlist.</div>
-            ) : (
+            ) : (                           
               selectedItems.map((item) => (
                 <div
                   key={item.Id}
@@ -393,9 +405,14 @@ export default function EditarPlaylists() {
                       +
                     </button>
                   </div>
-                </div>
+                
+                
+              </div>
               ))
+              
             )}
+            
+
           </div>
         )}
         {activeTab === 'addItems' && (

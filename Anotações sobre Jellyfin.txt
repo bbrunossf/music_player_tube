@@ -35,6 +35,20 @@ para ter o userId
 
 curl -X GET "http://192.168.1.9:8096/openapi" -H "X-Emby-Token: aa11489164f544f7b4ac8b3a0c95c1a8"
 
+teste para incluir um item em uma playlist
+item a adicionar: "92e635fde3b7638416eaa45de09c80eb"
+playlist alvo: /Playlists/04b891627bfb2f096c4930ad27c17be4
+pela documentação o endpoint para adicionar itens é: http://localhost/Playlists/{playlistId}/Items
+Então ficaria: curl -X POST "http://192.168.1.14:8096/Playlists/04b891627bfb2f096c4930ad27c17be4/Items?ids=92e635fde3b7638416eaa45de09c80eb&userId=cdc4c651276d4ebb9651cc89f197a98f" \
+  -H "X-Emby-Token: aa11489164f544f7b4ac8b3a0c95c1a8" \
+  -H "Accept: application/json"
+
+Para adicionar vários itens:
+curl -X POST "http://192.168.1.14:8096/Playlists/04b891627bfb2f096c4930ad27c17be4/Items?ids=ID1,ID2,ID3,ID4&userId=cdc4c651276d4ebb9651cc89f197a98f" \
+  -H "X-Emby-Token: aa11489164f544f7b4ac8b3a0c95c1a8" \
+  -H "Accept: application/json"
+
+
 /Users/AuthenticateByName
 
 
