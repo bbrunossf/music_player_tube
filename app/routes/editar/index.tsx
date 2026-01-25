@@ -3,7 +3,7 @@
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css"; 
 import "slick-carousel/slick/slick-theme.css";
-
+import { Check, Film, Tv, Music, Star } from 'lucide-react'; //ícones
 import Layout from '~/components/layout';
 import { Link } from "@remix-run/react";
 import { PlaylistEditPanel } from '~/components/PlaylistEditPanel';
@@ -223,6 +223,34 @@ export default function EditarPlaylists() {
     style="shape-rendering:geometricPrecision;text-rendering:geometricPrecision;image-rendering:optimizeQuality;fill-rule:evenodd;clip-rule:evenodd"><defs><style>.fil0{fill:#424242;fill-rule:nonzero}</style></defs><g id="Layer_x0020_1"><g id="_337034264"><path id="_337034576" class="fil0" d="M1430.7 1228.39c56.217 0 107.118 22.792 143.962 59.635 36.843 36.843 59.634 87.744 59.634 143.962 0 56.217-22.79 107.118-59.634 143.961-36.844 36.845-87.745 59.635-143.962 59.635-56.217 0-107.118-22.79-143.961-59.635-36.844-36.843-59.635-87.744-59.635-143.96 0-56.22 22.79-107.12 59.635-143.963 36.843-36.843 87.744-59.635 143.961-59.635z"/><path id="_337034192" d="m1533.79 259.873-.006-.058 30.878-3.429c34.35-3.817 65.42 21.038 69.234 55.39.544 4.912.382 2.479.382 7.058v1081.33c0 34.613-28.08 62.694-62.694 62.694-34.613 0-62.694-28.08-62.694-62.694V388.684l-685.712 76.19v1115.53c0 34.615-28.08 62.694-62.694 62.694-34.613 0-62.694-28.08-62.694-62.694V408.814c0-32.915 25.44-58.884 57.661-62.464l778.34-86.482z" style="fill:#424242"/><path id="_337034120" class="fil0" d="M618.439 1382.53c56.531 0 107.717 22.918 144.767 59.968 37.05 37.05 59.968 88.236 59.968 144.767 0 56.531-22.918 107.717-59.968 144.767-37.05 37.049-88.236 59.967-144.767 59.967-56.531 0-107.717-22.918-144.767-59.967-37.049-37.05-59.968-88.235-59.968-144.767 0-56.53 22.92-107.717 59.968-144.767 37.05-37.05 88.235-59.968 144.767-59.968z"/></g></g><path style="fill:none" d="M0 0h2048v2048H0z"/></svg>
   `);
 
+const getTypeIcon = (type: string) => {
+  switch (type) {
+    case 'Movie':
+      return Film;
+    case 'Series':
+    case 'Episode':
+      return Tv;
+    case 'Audio':
+    case 'MusicAlbum':
+      return Music;
+    default:
+      return Film;
+  }
+};
+
+const formatDuration = (ticks?: number) => {
+  if (!ticks) return null;
+  const minutes = Math.floor(ticks / 600000000);
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  
+  if (hours > 0) {
+    return `${hours}h ${remainingMinutes}m`;
+  }
+  return `${minutes}m`;
+};
+
+
 
   
 
@@ -237,21 +265,14 @@ export default function EditarPlaylists() {
             {/* use playlist map */}
             {playlists.map((playlist) => {
               const isActive = playlist.Id === selectedPlaylistId;
+              console.log("objeto playlist:", playlist);
               return (
                 <div 
-                key={playlist.Id} 
-                // style={{ padding: "10px", cursor: "pointer" }} 
+                key={playlist.Id}                 
                 className="px-2 cursor-pointer"
                 onClick={() => setSelectedPlaylistId(playlist.Id)}
                 >
-                  <div
-                    // style={{
-                    //   border: "1px solid #ccc",
-                    //   borderRadius: "8px",
-                    //   padding: "10px",
-                    //   textAlign: "center",
-                    //   backgroundColor: isActive ? "#e6f0ff" : "transparent",
-                    // }}
+                  <div                    
                     className={`border rounded-lg p-2 text-center transition ${
                       isActive ? "bg-blue-100 border-blue-400" : "border-gray-600"
                     }`}
@@ -259,8 +280,7 @@ export default function EditarPlaylists() {
                     <div className="w-full aspect-square bg-gray-800 rounded overflow-hidden flex items-center justify-center">
                     <img
                       src={getImageUrl(playlist, "Primary") || defaultSvg}
-                      alt={playlist.Name}
-                      // style={{ width: "100%", borderRadius: "4px" }}
+                      alt={playlist.Name}                                            
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         (e.currentTarget as HTMLImageElement).src = defaultSvg;
@@ -268,6 +288,9 @@ export default function EditarPlaylists() {
                     />
                     </div>
                     <h3 className="text-sm mt-2 break-words">{playlist.Name}</h3>
+                    <p className="text-xs text-gray-400">
+                      {playlist.ChildCount ?? 0} itens
+                    </p>
                   </div>
                 </div>
               );
@@ -324,91 +347,73 @@ export default function EditarPlaylists() {
 
         {activeTab === 'inPlaylist' && (
           // <div className="playlist-cards grid grid-cols-2 gap-3 py-2 overflow-y-auto max-h-[calc(100vh-200px)]">
-          <div className="playlist-cards grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 py-2 overflow-y-auto max-h-[calc(100vh-260px)] px-2">
+          <div className="playlist-cards grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 py-2 overflow-y-auto max-h-[calc(100vh-260px)] px-2">
             <div>                
-                  <button
-                    className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded"
-                    onClick={handleSave}
-                  >
-                    Salvar Alterações
-                  </button>
-                </div> 
-            {/* style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(2, 1fr)',
-              gap: 12,
-              overflowY: 'auto',
-              padding: '8px 0'
-            }}
-          > */}
+              <button
+                className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded"
+                onClick={handleSave}
+              >
+                Salvar Alterações
+              </button>
+            </div> 
+            
             {selectedItems.length === 0 ? (
               <div>Nenhum item nesta playlist.</div>
             ) : (                           
-              selectedItems.map((item) => (
+              selectedItems.map((item) => {
+                const TypeIcon = getTypeIcon(item.Type);
+                const duration = formatDuration(item.RunTimeTicks);
+                 return (
                 <div
                   key={item.Id}
-                  style={{
-                    borderRadius: 12,
-                    border: '1px solid #333',
-                    overflow: 'hidden',
-                    background: '#111',
-                    height: 260
-                  }}
+                  className="rounded-xl border border-[#333] overflow-hidden bg-[#111] h-[260px]"
+
                 >
-                  <div style={{ height: 180, position: 'relative' }}>
+                  <div className="h-[180px] relative"
+>
                     <img
                       src={getImageUrl(item, 'Primary') || defaultSvg}
                       alt={item.Name}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      className="w-full h-full object-cover"
+
                     />
-                    {/* <span
-                      style={{
-                        position: 'absolute',
-                        bottom: 8,
-                        left: 8,
-                        padding: '4px 8px',
-                        background: 'rgba(0,0,0,0.6)',
-                        color: '#fff',
-                        borderRadius: 999
-                      }}
-                    >
-                      {item.Name}
-                    </span> */}
+                    
                   </div>
+
                   <div
-                    style={{
-                      padding: 8,
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center'
-                    }}
-                  >
-                    <span style={{ color: '#bbb', fontSize: 12 }}>
-                      {item.Name}
-                    </span>
-                    <button
-                      className="fab"
-                      onClick={() => handleToggleItem(item)}
-                      style={{
-                        width: 34,
-                        height: 34,
-                        borderRadius: 17,
-                        background: '#ff3b83',
-                        color: '#fff',
-                        border: 'none',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}
-                      aria-label="Selecionar item"
+                      className="p-2 flex flex-col gap-[6px]"
+
                     >
-                      +
-                    </button>
-                  </div>
-                
-                
+                      <span className="text-[#bbb] text-xs leading-tight line-clamp-3"
+>
+                        {item.Name}
+                      </span>
+
+                      <div className="flex items-center gap-[6px]"
+>
+                        <TypeIcon size={14} color="#3b82f6" />
+
+                        {duration && (
+                          <span className="text-[11px] text-[#888]"
+>
+                            {duration}
+                          </span>
+                        )}
+
+                        <button                        
+                        onClick={() => handleToggleItem(item)}
+                        className="w-[34px] h-[34px] rounded-full bg-[#ff3b83] text-white flex items-center justify-center ml-auto"
+
+                        aria-label="Selecionar item"
+                      >
+                        +
+                      </button>
+                      </div>                        
+                    </div>
+                  
               </div>
-              ))
+              );
+              })
               
             )}
             
@@ -417,61 +422,62 @@ export default function EditarPlaylists() {
         )}
         {activeTab === 'addItems' && (
           // <div className="grid grid-cols-2 gap-3 py-2 overflow-y-auto max-h-[calc(100vh-200px)]">
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 py-2 overflow-y-auto max-h-[calc(100vh-260px)] px-2">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 py-2 overflow-y-auto max-h-[calc(100vh-260px)] px-2">
             {filteredItems.length === 0 ? (
               <div>Nenhum item encontrado.</div>
-            ) : (
+              ) : (
               filteredItems.map((item) => {
                 const isSelected = selectedIds.has(item.Id);
-
+                const TypeIcon = getTypeIcon(item.Type);
+                const duration = formatDuration(item.RunTimeTicks);
                 return (
                   <div
                     key={item.Id}
-                    style={{
-                      borderRadius: 12,
-                      border: isSelected ? '2px solid #3b82f6' : '1px solid #333',
-                      overflow: 'hidden',
-                      background: '#111',
-                      height: 260
-                    }}
+                    className={`rounded-xl overflow-hidden bg-[#111] h-[260px] ${
+                      isSelected ? "border-2 border-blue-500" : "border border-[#333]"
+                    }`}
                   >
-                    <div style={{ height: 180 }}>
+                    <div className="h-[180px]"
+>
                       <img
                         src={getImageUrl(item, 'Primary') || defaultSvg}
                         alt={item.Name}
-                        style={{ width: '100%', height: '100%', objectFit: 'scale-down' }}
+                        className="w-full h-full object-contain"
+
                       />
                     </div>
-
+                    
                     <div
-                      style={{
-                        padding: 8,
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
-                      }}
+                      className="p-2 flex flex-col gap-[6px]"
+
                     >
-                      <span style={{ color: '#bbb', fontSize: 12 }}>
+                      <span className="text-[#bbb] text-xs leading-tight"
+>
                         {item.Name}
                       </span>
 
-                      <button
+                      <div className="flex items-center gap-[6px]"
+>
+                        <TypeIcon size={14} color="#3b82f6" />
+
+                        {duration && (
+                          <span className="text-[11px] text-[#888]"
+>
+                            {duration}
+                          </span>
+                        )}
+
+                        <button
                         onClick={() => handleToggleItem(item)}
-                        style={{
-                          width: 34,
-                          height: 34,
-                          borderRadius: 17,
-                          background: isSelected ? '#22c55e' : '#ff3b83',
-                          color: '#fff',
-                          border: 'none',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}
+                        className={`w-[34px] h-[34px] rounded-full text-white flex items-center justify-center ml-auto ${
+  isSelected ? "bg-green-500" : "bg-[#ff3b83]"
+}`}
+
                         aria-label="Selecionar item"
                       >
                         {isSelected ? '✓' : '+'}
                       </button>
+                      </div>                        
                     </div>
                   </div>
                 );
@@ -479,7 +485,7 @@ export default function EditarPlaylists() {
             )}
           </div>
         )}
-    </div>   
+      </div>   
 
      {/* Barra de navegação inferior */}
       <div className="fixed bottom-0 left-0 right-0 bg-zinc-800 border-t border-zinc-700 py-2 px-4">
