@@ -1,5 +1,7 @@
 //import { Carousel } from "@material-tailwind/react";
-
+import { MediaItemCard} from "~/components/MediaItemCard";
+import { ViewToggle, type ViewMode } from "~/components/ViewToggle";
+import {BottomNavigation } from "~/components/BottomNavigation";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css"; 
 import "slick-carousel/slick/slick-theme.css";
@@ -17,6 +19,9 @@ import { MediaList } from "~/components/MediaList";
 import { Button } from "~/components/ui/button";
 import { Alert, AlertDescription } from "~/components/ui/alert";
 import type { JellyfinItem } from "~/types/jellyfin";
+import PlaylistCarousel from "~/components/PlaylistCarousel";
+import { CreatePlaylistModal } from "~/components/CreatePlaylistModal";
+
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const url = process.env.JELLYFIN_URL;
@@ -29,6 +34,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
 export default function EditarPlaylists() {
   const { url, apiKey, userId } = useLoaderData<typeof loader>();
   const [activeTab, setActiveTab] = useState('inPlaylist');
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+
 
   const {
     items,
@@ -54,6 +61,7 @@ export default function EditarPlaylists() {
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [selectedLibrary, setSelectedLibrary] = useState<string | null>(null);
   const [textFilter, setTextFilter] = useState<string>(""); // filtro de texto para o nome do item
+  
 
   // Adicione este useMemo para obter itens filtrados pela biblioteca e pelo texto
   const filteredItems = useMemo(() => {
@@ -74,23 +82,7 @@ export default function EditarPlaylists() {
     return byText;
   }, [items, selectedLibrary, textFilter]);
 
-  const sliderSettings = {
-    dots: true,
-    infinite: false,
-    speed: 500,
-    slidesToShow: 3,
-    slidesToScroll: 3,
-    responsive: [
-      {
-        breakpoint: 768,
-        settings: {
-          slidesToShow: 1,
-          slidesToScroll: 1,
-        }
-      }
-    ]
-  };
-
+  
   // Carrega playlists e todos os itens ao abrir a tela
   useEffect(() => {
     fetchPlaylists();
@@ -212,8 +204,7 @@ export default function EditarPlaylists() {
     alert("Playlist atualizada com sucesso.");
   };
 
-  //o Slider tem que ser assim porque esse não tem suporte ao SSR do Remix
-   const SliderComponent = typeof window === 'undefined' ? Slider.default : Slider;
+  
 
    const defaultSvg =
   "data:image/svg+xml;utf8," +
@@ -250,6 +241,41 @@ const formatDuration = (ticks?: number) => {
   return `${minutes}m`;
 };
 
+// Nova função de criação via modal (usa a função real createPlaylist)
+const handleCreatePlaylist = useCallback(
+  async (name: string): Promise<boolean> => {
+    if (!createPlaylist) return false;
+
+    // Determina mediaType com base nos itens selecionados (exemplo simples)
+    const hasVideo = selectedItems.some((i) => (i as any).Type === "Video");
+    const mediaType: "Audio" | "Video" = hasVideo ? "Video" : "Audio";
+
+    // Cria a playlist vazia (Ids = [])
+    const ok = await createPlaylist(name, [], mediaType);
+    if (!ok) return false;
+
+    // Atualiza a lista de playlists e seleciona a recém-criada por nome
+    await fetchPlaylists();
+    const newPlaylist = playlists.find((p) => p.Name === name);
+    if (newPlaylist?.Id) {
+      setSelectedPlaylistId(newPlaylist.Id);
+      setPlaylistName(name);
+      // Carrega itens da nova playlist (você pode ajustar conforme necessidade)
+      await fetchPlaylistItems(newPlaylist.Id);
+    }
+    return true;
+  },
+  [
+    createPlaylist,
+    fetchPlaylists,
+    playlists,
+    fetchPlaylistItems,
+    setSelectedPlaylistId,
+    setPlaylistName,
+    selectedItems
+  ]
+);
+
 
 
   
@@ -260,48 +286,23 @@ const formatDuration = (ticks?: number) => {
       {/* Carrossel para exibir listas existentes */}
       <div className="w-full max-w-5xl mb-6">
         <h2 className="text-center mb-4">Playlists</h2>
-        <div className="px-6">
-          <SliderComponent {...sliderSettings}>
-            {/* use playlist map */}
-            {playlists.map((playlist) => {
-              const isActive = playlist.Id === selectedPlaylistId;
-              console.log("objeto playlist:", playlist);
-              return (
-                <div 
-                key={playlist.Id}                 
-                className="px-2 cursor-pointer"
-                onClick={() => setSelectedPlaylistId(playlist.Id)}
-                >
-                  <div                    
-                    className={`border rounded-lg p-2 text-center transition ${
-                      isActive ? "bg-blue-100 border-blue-400" : "border-gray-600"
-                    }`}
-                  >
-                    <div className="w-full aspect-square bg-gray-800 rounded overflow-hidden flex items-center justify-center">
-                    <img
-                      src={getImageUrl(playlist, "Primary") || defaultSvg}
-                      alt={playlist.Name}                                            
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).src = defaultSvg;
-                      }}
-                    />
-                    </div>
-                    <h3 className="text-sm mt-2 break-words">{playlist.Name}</h3>
-                    <p className="text-xs text-gray-400">
-                      {playlist.ChildCount ?? 0} itens
-                    </p>
-                  </div>
-                </div>
-              );
-            })}          
-          </SliderComponent>
+        <div className="px-6">          
+          <PlaylistCarousel
+            playlists={playlists}
+            selectedPlaylistId={selectedPlaylistId}
+            getImageUrl={getImageUrl}
+            fallbackImage={defaultSvg}
+            onSelect={setSelectedPlaylistId}
+            onCreatePlaylist={handleCreatePlaylist}
+          />
         </div>
       </div>
 
       {/* caixa de filtro */}
       <div className="flex gap-4 mb-4">
         <input
+          id="text-filter"
+          name="text-filter"
           type="text"
           placeholder="Filtrar itens..."
           value={textFilter}
@@ -345,8 +346,11 @@ const formatDuration = (ticks?: number) => {
       {/* Área de conteúdo centralizada */}
       <div className="w-full max-w-5xl flex-1 overflow-hidden">
 
+        <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+
         {activeTab === 'inPlaylist' && (
           // <div className="playlist-cards grid grid-cols-2 gap-3 py-2 overflow-y-auto max-h-[calc(100vh-200px)]">
+          viewMode === "grid" ? (
           <div className="playlist-cards grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 py-2 overflow-y-auto max-h-[calc(100vh-260px)] px-2">
             <div>                
               <button
@@ -364,63 +368,32 @@ const formatDuration = (ticks?: number) => {
                 const TypeIcon = getTypeIcon(item.Type);
                 const duration = formatDuration(item.RunTimeTicks);
                  return (
-                <div
-                  key={item.Id}
-                  className="rounded-xl border border-[#333] overflow-hidden bg-[#111] h-[260px]"
-
-                >
-                  <div className="h-[180px] relative"
->
-                    <img
-                      src={getImageUrl(item, 'Primary') || defaultSvg}
-                      alt={item.Name}
-                      className="w-full h-full object-cover"
-
-                    />
-                    
-                  </div>
-
-                  <div
-                      className="p-2 flex flex-col gap-[6px]"
-
-                    >
-                      <span className="text-[#bbb] text-xs leading-tight line-clamp-3"
->
-                        {item.Name}
-                      </span>
-
-                      <div className="flex items-center gap-[6px]"
->
-                        <TypeIcon size={14} color="#3b82f6" />
-
-                        {duration && (
-                          <span className="text-[11px] text-[#888]"
->
-                            {duration}
-                          </span>
-                        )}
-
-                        <button                        
-                        onClick={() => handleToggleItem(item)}
-                        className="w-[34px] h-[34px] rounded-full bg-[#ff3b83] text-white flex items-center justify-center ml-auto"
-
-                        aria-label="Selecionar item"
-                      >
-                        +
-                      </button>
-                      </div>                        
-                    </div>
-                  
-              </div>
-              );
-              })
-              
+                  <MediaItemCard
+                    key={item.Id}
+                    item={item}
+                    imageUrl={getImageUrl(item, "Primary")}
+                    onToggle={handleToggleItem}
+                    TypeIcon={TypeIcon}
+                    duration={duration}
+                    imageFit="cover"
+                    lineClampTitle
+                    showSelectionBorder={false}
+                  />
+                );
+              })              
             )}
-            
-
           </div>
+            ) : (
+              <MediaList
+                items={selectedItems}
+                selectedIds={selectedIds}
+                onToggleItem={handleToggleItem}
+                getImageUrl={(item) => getImageUrl(item, "Primary")}
+              />
+            )
         )}
         {activeTab === 'addItems' && (
+          viewMode === "grid" ? (
           // <div className="grid grid-cols-2 gap-3 py-2 overflow-y-auto max-h-[calc(100vh-200px)]">
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 py-2 overflow-y-auto max-h-[calc(100vh-260px)] px-2">
             {filteredItems.length === 0 ? (
@@ -431,87 +404,34 @@ const formatDuration = (ticks?: number) => {
                 const TypeIcon = getTypeIcon(item.Type);
                 const duration = formatDuration(item.RunTimeTicks);
                 return (
-                  <div
+                  <MediaItemCard
                     key={item.Id}
-                    className={`rounded-xl overflow-hidden bg-[#111] h-[260px] ${
-                      isSelected ? "border-2 border-blue-500" : "border border-[#333]"
-                    }`}
-                  >
-                    <div className="h-[180px]"
->
-                      <img
-                        src={getImageUrl(item, 'Primary') || defaultSvg}
-                        alt={item.Name}
-                        className="w-full h-full object-contain"
-
-                      />
-                    </div>
-                    
-                    <div
-                      className="p-2 flex flex-col gap-[6px]"
-
-                    >
-                      <span className="text-[#bbb] text-xs leading-tight"
->
-                        {item.Name}
-                      </span>
-
-                      <div className="flex items-center gap-[6px]"
->
-                        <TypeIcon size={14} color="#3b82f6" />
-
-                        {duration && (
-                          <span className="text-[11px] text-[#888]"
->
-                            {duration}
-                          </span>
-                        )}
-
-                        <button
-                        onClick={() => handleToggleItem(item)}
-                        className={`w-[34px] h-[34px] rounded-full text-white flex items-center justify-center ml-auto ${
-  isSelected ? "bg-green-500" : "bg-[#ff3b83]"
-}`}
-
-                        aria-label="Selecionar item"
-                      >
-                        {isSelected ? '✓' : '+'}
-                      </button>
-                      </div>                        
-                    </div>
-                  </div>
+                    item={item}
+                    imageUrl={getImageUrl(item, "Primary")}
+                    isSelected={isSelected}
+                    onToggle={handleToggleItem}
+                    TypeIcon={TypeIcon}
+                    duration={duration}
+                    imageFit="contain"
+                    showSelectionBorder
+                  />
                 );
               })
             )}
           </div>
+            ) : (
+            <MediaList
+              items={filteredItems}
+              selectedIds={selectedIds}
+              onToggleItem={handleToggleItem}
+              getImageUrl={(item) => getImageUrl(item, "Primary")}
+            />
+          )
         )}
       </div>   
 
      {/* Barra de navegação inferior */}
-      <div className="fixed bottom-0 left-0 right-0 bg-zinc-800 border-t border-zinc-700 py-2 px-4">
-        <div className="max-w-md mx-auto">
-          
-          
-          <div className="flex justify-between mt-4 text-zinc-400">
-            <Link to="/">
-            <Button variant="ghost" className="flex flex-col items-center text-xs">
-              <span className="material-icons">home</span>
-              Home
-            </Button>
-            </Link>
-            
-              <Button variant="ghost" className="flex flex-col items-center text-xs">
-                <span className="material-icons">download_for_offline</span>                
-                Library
-              </Button>
-            
-            <Button variant="ghost" className="flex flex-col items-center text-xs">
-              <span className="material-icons">settings</span>
-              Config
-            </Button>
-          </div>
-        </div>
-      </div>
+      <BottomNavigation />
 
 
     </div>     
