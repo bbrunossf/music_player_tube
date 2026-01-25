@@ -31,6 +31,7 @@ COPY .env .env
 RUN mkdir -p /app/downloads
 RUN mkdir -p /app/downloads/videos
 RUN mkdir -p /app/downloads/musicas
+RUN mkdir -p /app/downloads/filmes
 
 # Porta da API (deve corresponder ao uso no código)
 EXPOSE 5000

@@ -8,6 +8,7 @@ services:
       - /videos:/app/downloads/videos  # Persistir downloads
       - /musicas:/app/downloads/musicas  # Persistir downloads
       - ./main.py:/app/main.py       # Montar main.py no container
+      - ./filmes:/app/downloads/filmes #para tentar ver os filmes no jellyfinn
     environment:
       - PYTHONUNBUFFERED=1
       - PYTHONPATH=/app
