@@ -30,3 +30,6 @@ Seguir esse procedimento para outros projetos em Remix que precisem de variávei
 
 ## Próximos passos / Orientações para próximos projetos: 
 * Fazer integração com a API do Jellyfinn, para popular os arquivos de áudio com as tagas ID3, e também atualizar a playlist com os arquivos novos
+
+##TOFIX:
+ajustar as funções de buscar pelos arquivos recém baixados e criar playlists com eles
