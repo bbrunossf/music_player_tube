@@ -1,14 +1,15 @@
-// Última atualização: lógica do botão "Carregar mais vídeos" 
+// Última atualização: lógica do botão "Carregar mais vídeos"
 
 import Layout from '~/components/layout';
 import { useState, useEffect } from 'react';
+import { useCallback } from "react";
 import { useFetcher } from '@remix-run/react';
 import { useMusicStore } from '~/store/useMusicStore';
-import { Button } from '~/components/ui/button'; 
+import { Button } from '~/components/ui/button';
 import { Card, CardContent } from '~/components/ui/card';
 import { Checkbox } from '~/components/ui/checkbox';
 import { Label } from '~/components/ui/label';
-import { Input } from '~/components/ui/input'; 
+import { Input } from '~/components/ui/input';
 
 import { json, LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
@@ -18,19 +19,30 @@ import { useDownloadProgress } from '~/hooks/useDownloadProgress'
 import { action } from './api.search';
 import { Link } from "@remix-run/react";
 
+import type { JellyfinItem } from "~/types/jellyfin";    // NOVO
+
 
 
 //função loader para carregar as variáveis de ambiente
 export async function loader({ request }: LoaderFunctionArgs) {
   return json({
     apiHealthUrl: process.env.PUBLIC_API_URL_HEALTH,
+    // NOVO: configuração Jellyfin para buscar playlists existentes
+    jellyfinUrl: process.env.JELLYFIN_URL,
+    jellyfinApiKey: process.env.JELLYFIN_API,
+    jellyfinUserId: process.env.JELLYFIN_USER_ID,
   });
 }
 
 export default function Index() {
-    const { apiHealthUrl } = useLoaderData<typeof loader>();
+  const {
+      apiHealthUrl,
+      jellyfinUrl,
+      jellyfinApiKey,
+      jellyfinUserId,
+  } = useLoaderData<typeof loader>();
     console.log('API Health URL:', apiHealthUrl); // Verifica se a URL está correta
-   
+
     const {
         tracks,
         selected,
@@ -51,14 +63,50 @@ export default function Index() {
     const [downloadFormat, setDownloadFormat] = useState<"video" | "audio" | null>(null);
     const [jobId, setJobId] = useState<string | null>(null);
 
-    const {
-        progress,
-        current,
-        processed,
-        total,
-        status
-    } = useDownloadProgress(jobId)
+  // NOVO: estados para opções de pós-download
+     const [postDownloadMode, setPostDownloadMode] = useState<"none" | "new" | "existing">("none");
+     const [newPlaylistName, setNewPlaylistName] = useState("");
+     const [existingPlaylistId, setExistingPlaylistId] = useState("");
+     const [jellyfinPlaylists, setJellyfinPlaylists] = useState<JellyfinItem[]>([]);
+     const [loadingPlaylists, setLoadingPlaylists] = useState(false);
 
+     const {
+         progress,
+         current,
+         processed,
+         total,
+         status,
+         data: downloadData,
+     } = useDownloadProgress(jobId)
+
+
+    // NOVO: carrega playlists do Jellyfin quando o modal abre
+    const loadJellyfinPlaylists = useCallback(async () => {
+      if (!jellyfinUrl || !jellyfinApiKey || !jellyfinUserId) return;
+
+      setLoadingPlaylists(true);
+      try {
+          const baseUrl = jellyfinUrl.replace(/\/$/, "");
+          const params = new URLSearchParams({
+              IncludeItemTypes: "Playlist",
+              Recursive: "true",
+              SortBy: "SortName",
+              SortOrder: "Ascending",
+          });
+          const resp = await fetch(
+              `${baseUrl}/Users/${jellyfinUserId}/Items?${params}`,
+              { headers: { "X-Emby-Token": jellyfinApiKey } }
+          );
+          if (resp.ok) {
+              const data = await resp.json();
+              setJellyfinPlaylists(data.Items || []);
+          }
+      } catch (err) {
+          console.error("Erro ao carregar playlists:", err);
+      } finally {
+          setLoadingPlaylists(false);
+      }
+  }, [jellyfinUrl, jellyfinApiKey, jellyfinUserId]);
 
 
     const handleSearch = () => {
@@ -91,52 +139,71 @@ export default function Index() {
         }));
     };
 
-    
+
     const handleDownload = () => {
-    const selectedVideoIds = Object.keys(selected).filter(id => {
-        return selected[id] && !tracks.some(playlist => playlist.id === id); 
-    });
+        const selectedVideoIds = Object.keys(selected).filter(id => {
+            return selected[id] && !tracks.some(playlist => playlist.id === id);
+        });
 
-    if (selectedVideoIds.length === 0) {
-        alert('Nenhum vídeo selecionado para download.');
-        return;
-    }
-
-    setShowDownloadModal(true); // Abre o modal
-};
-
-const iniciarDownload = (formato: "video" | "audio") => {
-    const selectedVideoIds = Object.keys(selected).filter(id => {
-        return selected[id] && !tracks.some(playlist => playlist.id === id); 
-    });
-
-    fetch('/api/download', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            video_ids: selectedVideoIds,
-            format: formato // Enviado para o backend decidir
-        })
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Erro ao iniciar o download');
+        if (selectedVideoIds.length === 0) {
+            alert('Nenhum vídeo selecionado para download.');
+            return;
         }
-        return response.json();
-    })
-    .then(data => {
-        setJobId(data.job_id);
-        console.log("Job iniciado:", data.job_id);
-        alert(data.status);
-    })
-    .catch(error => {
-        console.error('Erro:', error);
-        alert('Houve um erro ao iniciar o download.');
-    });
 
-    setShowDownloadModal(false);
-    setDownloadFormat(null);
-};
+        // Reseta opções de pós-download
+        setPostDownloadMode("none");
+        setNewPlaylistName("");
+        setExistingPlaylistId("");
+
+        setShowDownloadModal(true);
+        loadJellyfinPlaylists();  // NOVO
+    };
+
+
+    const iniciarDownload = (formato: "video" | "audio") => {
+        const selectedVideoIds = Object.keys(selected).filter(id => {
+            return selected[id] && !tracks.some(playlist => playlist.id === id);
+        });
+
+        // Monta o body com os novos campos
+        const body: any = {
+            video_ids: selectedVideoIds,
+            format: formato,
+        };
+
+        if (postDownloadMode === "new") {
+            body.create_playlist = true;
+            body.playlist_name = newPlaylistName.trim() || undefined;
+        } else if (postDownloadMode === "existing") {
+            body.create_playlist = true;
+            body.target_playlist_id = existingPlaylistId;
+        }
+        // se "none", create_playlist fica false (default)
+
+        fetch('/api/download', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Erro ao iniciar o download');
+            }
+            return response.json();
+        })
+        .then(data => {
+            setJobId(data.job_id);
+            console.log("Job iniciado:", data.job_id);
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            alert('Houve um erro ao iniciar o download.');
+        });
+
+        setShowDownloadModal(false);
+        setDownloadFormat(null);
+    };
+
 
 
     const selecionarTodosDaPlaylist = (playlistId) => {
@@ -166,7 +233,7 @@ const iniciarDownload = (formato: "video" | "audio") => {
 
     const handleUnifiedInput = () => {
         const input = searchurl.trim();
-        
+
         // Verifica se a entrada parece ser uma URL
         if (input.startsWith('http://') || input.startsWith('https://') || input.startsWith('www.')) {
             // É uma URL, executa a importação
@@ -182,19 +249,19 @@ const iniciarDownload = (formato: "video" | "audio") => {
             alert('Por favor, insira uma URL ou termo de pesquisa');
         }
         };
-    
+
 
 
 
     useEffect(() => {
         if (searchFetcher.data?.playlists) {
-            setTracks(searchFetcher.data.playlists); 
-            searchFetcher.data = undefined; 
+            setTracks(searchFetcher.data.playlists);
+            searchFetcher.data = undefined;
         }
 
         if (searchFetcher.data?.error) {
             console.error('Erro ao buscar playlists:', searchFetcher.data.error);
-            searchFetcher.data = undefined; 
+            searchFetcher.data = undefined;
         }
     }, [searchFetcher.data, setTracks]);
 
@@ -240,35 +307,71 @@ useEffect(() => {
             className="text-lg h-14 bg-zinc-800 border-none focus:ring-1 focus:ring-blue-500"
 
           />
-          <Button 
-            onClick={handleUnifiedInput} 
+          <Button
+            onClick={handleUnifiedInput}
             className="shrink-0 px-5 bg-blue-600 hover:bg-blue-700 h-14 min-w-[56px]"
           >
             <span className="material-icons text-2xl">search</span>
           </Button>
         </div>
 
-       {jobId && (
-        <div className="mb-6 p-5 bg-zinc-800 rounded-lg border border-zinc-700 text-base space-y-3">
-          <div className="flex justify-between items-center">
-            <p className="font-medium text-zinc-300">Status: <span className="text-blue-400">{status}</span></p>
-            <p className="text-zinc-400">{progress}%</p>
-          </div>
-          <div className="w-full bg-zinc-700 rounded-full h-4">
-            <div 
-              className="bg-blue-500 h-4 rounded-full transition-all" 
-              style={{ width: `${progress}%` }}
-            ></div>
-          </div>
-          <div className="flex justify-between">
-            <p className="text-zinc-300">
-              <span className="font-medium">Vídeos:</span> {processed}/{total}
-            </p>
-            <span className="material-icons text-base text-blue-400">cloud_download</span>
-          </div>
-          <p className="text-zinc-400 truncate text-base">{current}</p>
-        </div>
-      )} 
+        {jobId && (
+         <div className="mb-6 p-5 bg-zinc-800 rounded-lg border border-zinc-700 text-base space-y-3">
+           <div className="flex justify-between items-center">
+             <p className="font-medium text-zinc-300">
+               Status:{" "}
+               <span className={
+                 status === "error" || status === "playlist_error"
+                   ? "text-red-400"
+                   : status === "completed"
+                   ? "text-green-400"
+                   : "text-blue-400"
+               }>
+                 {status === "scanning_jellyfin" && "Escaneando Jellyfin..."}
+                 {status === "creating_playlist" && "Criando playlist..."}
+                 {status === "playlist_error" && "Erro na playlist"}
+                 {status === "running" && "Baixando"}
+                 {status === "completed" && "Concluído"}
+                 {status === "error" && "Erro"}
+               </span>
+             </p>
+             <p className="text-zinc-400">{progress}%</p>
+           </div>
+           <div className="w-full bg-zinc-700 rounded-full h-4">
+             <div
+               className={`h-4 rounded-full transition-all ${
+                 status === "error" || status === "playlist_error"
+                   ? "bg-red-500"
+                   : status === "completed"
+                   ? "bg-green-500"
+                   : "bg-blue-500"
+               }`}
+               style={{ width: `${progress}%` }}
+             ></div>
+           </div>
+           <div className="flex justify-between">
+             <p className="text-zinc-300">
+               <span className="font-medium">Vídeos:</span> {processed}/{total}
+             </p>
+             <span className="material-icons text-base text-blue-400">cloud_download</span>
+           </div>
+           {current && <p className="text-zinc-400 truncate text-base">{current}</p>}
+
+           {/* NOVO: info da playlist */}
+           {status === "completed" && downloadData?.playlist_id && (
+             <div className="mt-3 pt-3 border-t border-zinc-700">
+               <p className="text-green-400 text-sm flex items-center gap-1">
+                 <span className="material-icons text-base">playlist_add_check</span>
+                 {downloadData.playlist_name
+                   ? `Playlist: ${downloadData.playlist_name}`
+                   : `Itens adicionados à playlist ${downloadData.playlist_id}`}
+               </p>
+             </div>
+           )}
+         </div>
+       )}
+
+
 
         {/* Filtros
         <div className="flex gap-3 mb-6 overflow-x-auto py-3">
@@ -299,7 +402,7 @@ useEffect(() => {
                       // Impedir propagação para que o clique no checkbox não afete outros elementos
                       onClick={(e) => e.stopPropagation()}
                     />
-                    <div 
+                    <div
                       className="flex-1 cursor-pointer"
                       onClick={() => handleTogglePlaylist(playlist.id)}
                     >
@@ -314,8 +417,8 @@ useEffect(() => {
 
                 {expandedPlaylistId === playlist.id && (
                   <div className="border-t border-zinc-700 p-4">
-                  <Button 
-                    className="w-full mb-3 h-10 text-base bg-blue-600 hover:bg-blue-700 text-white" 
+                  <Button
+                    className="w-full mb-3 h-10 text-base bg-blue-600 hover:bg-blue-700 text-white"
                     onClick={() => selecionarTodosDaPlaylist(playlist.id)}
                   >
                     Selecionar Todos
@@ -374,14 +477,14 @@ useEffect(() => {
         {/* Barra de navegação inferior */}
         <div className="fixed bottom-0 left-0 right-0 bg-zinc-800 border-t border-zinc-700 py-2 px-4">
           <div className="max-w-md mx-auto">
-            <Button 
-              className="w-full h-12 text-sm font-medium bg-blue-600 hover:bg-blue-700 flex items-center justify-center gap-2" 
+            <Button
+              className="w-full h-12 text-sm font-medium bg-blue-600 hover:bg-blue-700 flex items-center justify-center gap-2"
               onClick={handleDownload}
             >
               <span className="material-icons">download</span>
               Download Selected ({Object.keys(selected).filter(id => selected[id] && !tracks.some(playlist => playlist.id === id)).length})
             </Button>
-            
+
             <div className="flex justify-between mt-4 text-zinc-400">
               <Button variant="ghost" className="flex flex-col items-center text-xs">
                 <span className="material-icons">home</span>
@@ -389,7 +492,7 @@ useEffect(() => {
               </Button>
               <Link to="/editar">
                 <Button variant="ghost" className="flex flex-col items-center text-xs">
-                  <span className="material-icons">download_for_offline</span>                
+                  <span className="material-icons">download_for_offline</span>
                   Library
                 </Button>
               </Link>
@@ -402,12 +505,14 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* Modal de seleção de formato */}
+      {/* Modal de seleção de formato + opções de playlist */}
       {showDownloadModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-          <div className="bg-zinc-800 rounded-xl p-5 shadow-lg w-full max-w-sm border border-zinc-700">
-            <h2 className="text-lg font-semibold mb-4 text-center">Choose Format</h2>
+          <div className="bg-zinc-800 rounded-xl p-5 shadow-lg w-full max-w-sm border border-zinc-700 max-h-[90vh] overflow-y-auto">
+            <h2 className="text-lg font-semibold mb-4 text-center">Opções de Download</h2>
 
+            {/* Escolha do formato */}
+            <p className="text-sm text-zinc-400 mb-2">Formato</p>
             <div className="grid grid-cols-2 gap-3 mb-5">
               <Button
                 variant={downloadFormat === "video" ? "default" : "outline"}
@@ -427,25 +532,136 @@ useEffect(() => {
               </Button>
             </div>
 
+            {/* Divisor */}
+            <div className="border-t border-zinc-700 my-4" />
+
+            {/* Opções de pós-download */}
+            <p className="text-sm text-zinc-400 mb-3">Após o download</p>
+
+            <div className="space-y-3 mb-5">
+              {/* Opção 1: Apenas baixar */}
+              <label
+                className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                  postDownloadMode === "none"
+                    ? "border-blue-500 bg-blue-500/10"
+                    : "border-zinc-700 hover:border-zinc-500"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="postDownload"
+                  checked={postDownloadMode === "none"}
+                  onChange={() => setPostDownloadMode("none")}
+                  className="mt-0.5 accent-blue-500"
+                />
+                <div>
+                  <p className="text-sm font-medium">Apenas baixar</p>
+                  <p className="text-xs text-zinc-400">Salva os arquivos sem alterar playlists</p>
+                </div>
+              </label>
+
+              {/* Opção 2: Criar nova playlist */}
+              <label
+                className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                  postDownloadMode === "new"
+                    ? "border-blue-500 bg-blue-500/10"
+                    : "border-zinc-700 hover:border-zinc-500"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="postDownload"
+                  checked={postDownloadMode === "new"}
+                  onChange={() => setPostDownloadMode("new")}
+                  className="mt-0.5 accent-blue-500"
+                />
+                <div className="flex-1">
+                  <p className="text-sm font-medium">Criar nova playlist</p>
+                  <p className="text-xs text-zinc-400 mb-2">
+                    Cria uma playlist no Jellyfin com os arquivos baixados
+                  </p>
+                  {postDownloadMode === "new" && (
+                    <Input
+                      placeholder="Nome da playlist (opcional)"
+                      value={newPlaylistName}
+                      onChange={(e) => setNewPlaylistName(e.target.value)}
+                      className="h-9 text-sm bg-zinc-900 border-zinc-600"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  )}
+                </div>
+              </label>
+
+              {/* Opção 3: Adicionar a playlist existente */}
+              <label
+                className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                  postDownloadMode === "existing"
+                    ? "border-blue-500 bg-blue-500/10"
+                    : "border-zinc-700 hover:border-zinc-500"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="postDownload"
+                  checked={postDownloadMode === "existing"}
+                  onChange={() => setPostDownloadMode("existing")}
+                  className="mt-0.5 accent-blue-500"
+                />
+                <div className="flex-1">
+                  <p className="text-sm font-medium">Adicionar a playlist existente</p>
+                  <p className="text-xs text-zinc-400 mb-2">
+                    Adiciona os arquivos a uma playlist já criada no Jellyfin
+                  </p>
+                  {postDownloadMode === "existing" && (
+                    <select
+                      value={existingPlaylistId}
+                      onChange={(e) => setExistingPlaylistId(e.target.value)}
+                      className="w-full h-9 text-sm bg-zinc-900 border border-zinc-600 rounded px-2 text-white"
+                      onClick={(e) => e.stopPropagation()}
+                      disabled={loadingPlaylists}
+                    >
+                      <option value="">
+                        {loadingPlaylists ? "Carregando playlists..." : "Selecione uma playlist"}
+                      </option>
+                      {jellyfinPlaylists.map((pl) => (
+                        <option key={pl.Id} value={pl.Id}>
+                          {pl.Name} ({pl.ChildCount ?? 0} itens)
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              </label>
+            </div>
+
+            {/* Botões de ação */}
             <div className="grid grid-cols-2 gap-3">
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 onClick={() => setShowDownloadModal(false)}
                 className="h-12 border border-zinc-700 hover:bg-zinc-700"
               >
-                Cancel
+                Cancelar
               </Button>
               <Button
-                onClick={() => downloadFormat && iniciarDownload(downloadFormat)}
-                disabled={!downloadFormat}
+                onClick={() => {
+                  if (!downloadFormat) return;
+                  if (postDownloadMode === "existing" && !existingPlaylistId) {
+                    alert("Selecione uma playlist existente.");
+                    return;
+                  }
+                  iniciarDownload(downloadFormat);
+                }}
+                disabled={!downloadFormat || (postDownloadMode === "existing" && !existingPlaylistId)}
                 className="h-12 bg-blue-600 hover:bg-blue-700"
               >
                 Download
               </Button>
             </div>
           </div>
-        </div>        
+        </div>
       )}
+
 
       {/* Status da API */}
         <footer className="mt-6 pt-3 border-t border-zinc-700 flex items-center justify-center gap-2 text-xs text-zinc-500">
@@ -461,5 +677,5 @@ useEffect(() => {
     </div>
 //   </Layout>
 );
-    
+
 }

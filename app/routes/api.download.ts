@@ -24,15 +24,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export async function action({ request }: ActionFunctionArgs) {
-  // const formData = await request.formData()
-  // const video_ids = JSON.parse(formData.get('video_ids') as string)
-  const { video_ids, format } = await request.json()
+  const { video_ids, format, create_playlist, playlist_name, target_playlist_id } = await request.json()
 
   try {
-    //const response = await fetch('http://192.168.1.14:5000/api/download', {
-    // ✅ process.env funciona perfeitamente aqui (servidor)
     const apiUrl = process.env.PUBLIC_API_URL_DOWNLOAD
-    
+
     if (!apiUrl) {
       console.error('API_URL_DOWNLOAD não definida no .env')
       return json({ error: 'Configuração de API inválida' }, { status: 500 })
@@ -40,10 +36,23 @@ export async function action({ request }: ActionFunctionArgs) {
 
     console.log(`Iniciando download de ${video_ids.length} vídeos na URL: ${apiUrl}`)
 
+    const body: any = { video_ids, format };
+
+    // NOVO: repassa campos de playlist se existirem
+    if (create_playlist) {
+      body.create_playlist = true;
+    }
+    if (playlist_name) {
+      body.playlist_name = playlist_name;
+    }
+    if (target_playlist_id) {
+      body.target_playlist_id = target_playlist_id;
+    }
+
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ video_ids, format })
+      body: JSON.stringify(body),
     })
 
     if (!response.ok) {
@@ -56,14 +65,10 @@ export async function action({ request }: ActionFunctionArgs) {
     const data = await response.json()
     console.log('Resposta da API de download:', data)
 
-    // return new Response(JSON.stringify({ status: 'Downloads iniciados com sucesso!' }), {
-    //   status: 200,
-    //   headers: { 'Content-Type': 'application/json' }
-    // })
-  return json({
+    return json({
       job_id: data.job_id,
       status: data.status
-    })    
+    })
   } catch (error) {
     return new Response(JSON.stringify({ error: 'Serviço indisponível' }), {
       status: 503,

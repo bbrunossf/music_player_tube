@@ -3,7 +3,7 @@
 FROM python:3.11-slim
 
 # Instalar dependências do sistema para yt-dlp/FFmpeg
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
 	curl \
 	unzip \
