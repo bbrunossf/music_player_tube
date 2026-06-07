@@ -1,4 +1,4 @@
-# Aplicação para criar biblioteca de clipes e músicas
+# Aplicação para criar biblioteca de clipes e músicas - versão 5
 
 
 ## Resumo
@@ -27,9 +27,14 @@ A solução foi declarar as variáveis dentro do arquivo do daemon, (frontend.se
 com a chave Environment=PUBLIC_API_URL_IMPORT_PLAYLIST=http://192.168.1.14:5000/api/import-playlist  
 Seguir esse procedimento para outros projetos em Remix que precisem de variáveis de ambiente.  
 
+## Últimas atualizações:
+* Adicionada opção para criar nova playlist a partir dos arquivos baixados, ou adicioná-los em uma playlist existente
 
 ## Próximos passos / Orientações para próximos projetos: 
-* Fazer integração com a API do Jellyfinn, para popular os arquivos de áudio com as tagas ID3, e também atualizar a playlist com os arquivos novos
+* Fazer integração com a API do Jellyfinn, para popular os arquivos de áudio com as tags ID3
 
 ##TOFIX:
-ajustar as funções de buscar pelos arquivos recém baixados e criar playlists com eles
+Verificar a codificação do nome dos arquivos e/ou a entrada deles nos registros do Jellyfinn
+
+##TOCHECK:
+Verificar a opção de adicionar arquivos a uma playlist existente

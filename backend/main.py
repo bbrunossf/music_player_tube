@@ -93,12 +93,7 @@ def search_playlists(query):
     #print(f"response: {response}") #para verificar o que está sendo retornado
     return response
 
-# def get_videos_info(video_id):
-#     request = youtube.videos().list(
-#         part='snippet,contentDetails',
-#         id=video_id)
-#     print("obtendo dados do video...")
-#     return request.execute()
+
 
 def get_videos_info(playlist_id):
     videos = []
@@ -127,26 +122,7 @@ def get_videos_info(playlist_id):
 
     return videos
 
-# def get_playlist_videos(playlist_id):
-#     videos = []
-#     request = youtube.playlistItems().list(
-#         playlistId=playlist_id,
-#         part='snippet,contentDetails',
-#         maxResults=50
-#     )
-#     response = request.execute()
 
-#     #print(response['items']) #retorna uma lista de dicionários com 'title', 'resourceId' e 'thumbnails'
-
-#     # Extrai informações dos vídeos na playlist
-#     for item in response['items']:
-#         video_title = item['snippet']['title']
-#         video_id = item['snippet']['resourceId']['videoId']
-#         video_url = f"https://www.youtube.com/watch?v={video_id}"
-
-#         videos.append((video_title, video_url))
-
-#     return videos
 
 @app.get("/api/health")
 async def health_check():
@@ -323,85 +299,47 @@ def trigger_jellyfin_scan() -> bool:
         print(f"[Jellyfin] Erro ao disparar scan: {e}")
         return False
 
-
-def find_jellyfin_items_by_filenames(
-    filenames: set,
-    media_type: str,
-    max_retries: int = 6,
-    retry_delay: int = 5,
-) -> list:
+def get_jellyfin_file_id_map(media_type: str = "") -> dict[str, str]:
     """
-    Busca no Jellyfin os itens cujo nome de arquivo (parte final do Path)
-    bate com algum dos nomes fornecidos.
+    Busca todos os itens da biblioteca do Jellyfin e retorna
+    um dicionário mapeando nome_do_arquivo -> jellyfin_id.
 
     Args:
-        filenames: conjunto de nomes de arquivo (ex: "Sweet Child O' Mine.mp3")
-        media_type: "Audio" ou "Video"
-        max_retries: número máximo de tentativas (aguardando o scan)
-        retry_delay: segundos entre tentativas
+        media_type: "Audio" ou "Videofile" (vazio = todos os tipos)
 
     Returns:
-        Lista de dicts com {"Id": ..., "Name": ..., "Path": ...}
+        dict: { "Sweet Child O' Mine.mp3": "guid-abc123", ... }
     """
     base_url = JELLYFIN_URL.rstrip("/")
-    include_types = "Audio" if media_type == "Audio" else "Video"
-    limit = len(filenames) + 20  # margem extra
+    params: dict = {
+        "Recursive": "true",
+        "Fields": "Path",
+        "Limit": 10000,
+    }
+    if media_type:
+        params["IncludeItemTypes"] = media_type
 
-    for attempt in range(max_retries):
-        time.sleep(retry_delay)
+    resp = httpx.get(
+        f"{base_url}/Users/{JELLYFIN_USER_ID}/Items",
+        headers=_jellyfin_headers(),
+        params=params,
+        timeout=30,
+    )
+    resp.raise_for_status()
 
-        try:
-            resp = httpx.get(
-                f"{base_url}/Users/{JELLYFIN_USER_ID}/Items",
-                params={
-                    "SortBy": "DateCreated",
-                    "SortOrder": "Descending",
-                    "limit": limit,
-                    "Fields": "Path,DateCreated",
-                    "Recursive": "true",
-                    "IncludeItemTypes": include_types,
-                },
-                headers=_jellyfin_headers(),
-                timeout=30,
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            items = data.get("Items", [])
+    items = resp.json().get("Items", [])
+    if items:
+        print(f"[Jellyfin] Encontrados {len(items)} itens na biblioteca")
+    else:
+        print("[Jellyfin] Nenhum item encontrado na biblioteca")
 
-            # Filtra os itens cujo nome do arquivo bate com algum dos nossos
-            matched = []
-            for item in items:
-                item_path = item.get("Path", "")
-                if not item_path:
-                    continue
-                item_filename = os.path.basename(item_path)
-                if item_filename in filenames:
-                    matched.append({
-                        "Id": item["Id"],
-                        "Name": item.get("Name", ""),
-                        "Path": item_path,
-                    })
+    return {
+        os.path.basename(item["Path"]): item["Id"]
+        for item in items
+        if item.get("Path")
+    }
 
-            print(
-                f"[Jellyfin] Tentativa {attempt + 1}: "
-                f"{len(matched)}/{len(filenames)} itens encontrados"
-            )
-
-            if len(matched) >= len(filenames):
-                return matched
-
-        except Exception as e:
-            print(f"[Jellyfin] Erro na busca (tentativa {attempt + 1}): {e}")
-
-    # Última tentativa — retorna o que conseguiu
-    return matched if 'matched' in dir() else []
-
-
-def create_jellyfin_playlist(
-    name: str,
-    item_ids: list,
-    media_type: str,
-) -> dict | None:
+def create_jellyfin_playlist(    name: str,    item_ids: list,    media_type: str,) -> dict | None:
     """
     Cria uma playlist no Jellyfin com os IDs fornecidos.
     Retorna o JSON de resposta ou None em caso de erro.
@@ -411,11 +349,11 @@ def create_jellyfin_playlist(
     try:
         resp = httpx.post(
             f"{base_url}/Playlists",
-            json={
+            params={
                 "Name": name,
-                "Ids": item_ids,
-                "MediaType": media_type,
+                "Ids": ",".join(item_ids),
                 "UserId": JELLYFIN_USER_ID,
+                "MediaType": media_type,
             },
             headers=_jellyfin_headers(),
             timeout=30,
@@ -427,6 +365,7 @@ def create_jellyfin_playlist(
     except Exception as e:
         print(f"[Jellyfin] Erro ao criar playlist: {e}")
         return None
+
 
 
 @app.post("/api/download")
@@ -506,18 +445,41 @@ def _create_playlist_for_job(job_id: str, saved_paths: list, request: DownloadRe
     """
     # Extrai os nomes de arquivo (ex: "Sweet Child O' Mine.mp3")
     filenames = {os.path.basename(p) for p in saved_paths}
-    media_type = "Audio" if request.format == "audio" else "Video"
+    media_type = "Audio" if request.format == "audio" else "Videofile"
 
     print(f"[Jellyfin] {len(filenames)} arquivos para buscar no Jellyfin")
+    print(f"arquivos a buscar: {filenames})")
 
     # 1. Disparar scan da biblioteca
     jobs[job_id]["status"] = "scanning_jellyfin"
     trigger_jellyfin_scan()
 
-    # 2. Aguardar scan e buscar itens (tenta por até ~30s)
-    matched_items = find_jellyfin_items_by_filenames(filenames, media_type)
+    # 2. Aguardar scan e buscar IDs (tenta por até ~30s)
+    item_ids: list[str] = []
+    file_map: dict[str, str] = {}
+    for attempt in range(6):
+        time.sleep(5)
+        try:
+            file_map = get_jellyfin_file_id_map(media_type)
+        except Exception as e:
+            print(f"[Jellyfin] Erro ao buscar mapa (tentativa {attempt + 1}): {e}")
+            continue
 
-    if not matched_items:
+        found = sum(1 for name in filenames if name in file_map)
+        print(
+            f"[Jellyfin] Tentativa {attempt + 1}: "
+            f"{found}/{len(filenames)} arquivos encontrados"
+        )
+
+        if found >= len(filenames):
+            item_ids = [file_map[name] for name in filenames]
+            break
+    else:
+        # Saiu do loop sem encontrar todos — pega o que conseguiu
+        if file_map:
+            item_ids = [file_map[name] for name in filenames if name in file_map]
+
+    if not item_ids:
         jobs[job_id]["status"] = "playlist_error"
         jobs[job_id]["errors"].append(
             "Nenhum item encontrado no Jellyfin após o scan. "
@@ -529,7 +491,6 @@ def _create_playlist_for_job(job_id: str, saved_paths: list, request: DownloadRe
     playlist_name = request.playlist_name or datetime.now().strftime(
         "Downloads %d/%m/%Y %H:%M"
     )
-    item_ids = [item["Id"] for item in matched_items]
 
     result = create_jellyfin_playlist(playlist_name, item_ids, media_type)
 
@@ -537,7 +498,7 @@ def _create_playlist_for_job(job_id: str, saved_paths: list, request: DownloadRe
         jobs[job_id]["status"] = "completed"
         jobs[job_id]["playlist_id"] = result.get("Id")
         jobs[job_id]["playlist_name"] = playlist_name
-        jobs[job_id]["matched_items"] = len(matched_items)
+        jobs[job_id]["matched_items"] = len(item_ids)
         jobs[job_id]["total_matched"] = len(filenames)
     else:
         jobs[job_id]["status"] = "playlist_error"
@@ -545,6 +506,7 @@ def _create_playlist_for_job(job_id: str, saved_paths: list, request: DownloadRe
             "Falha ao criar a playlist no Jellyfin. "
             "Verifique a conexão e as credenciais."
         )
+
 
 @app.get("/api/download/{job_id}")
 def get_download_status(job_id: str):
