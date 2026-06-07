@@ -203,7 +203,8 @@ async def import_playlist(url: str = Form(...)):
 
 def download_video(video_id: str):
     ydl_opts = {
-        "remote_components": "ejs:github", #agora precisa
+        "verbose": True,
+        "remote_components": {"ejs:github"}, #agora precisa
         'format': 'best',  # Define que quer baixar o melhor formato de vídeo #VOU DEIXAR O DEFAULT MESMO
         'outtmpl': 'downloads/videos/%(title)s.%(ext)s',  # Define o template do nome do arquivo
 
@@ -231,7 +232,7 @@ def download_video(video_id: str):
 
 def download_audio(video_id: str):
     ydl_opts = {
-        "remote_components": "ejs:github", #agora precisa
+        "remote_components": {"ejs:github"}, #agora precisa
         'format': 'bestaudio/best',
         'outtmpl': 'downloads/musicas/%(artist,creator)s/%(title)s.%(ext)s',
 
