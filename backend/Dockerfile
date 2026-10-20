@@ -36,5 +36,5 @@ RUN mkdir -p /app/downloads/filmes
 # Porta da API (deve corresponder ao uso no código)
 EXPOSE 5000
 
-# Comando para iniciar a aplicação
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5000", "--reload"]
+# Comando para iniciar a aplicação (sem --reload: em produção o auto-reload só gasta CPU e reinicia a cada escrita)
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5000"]
